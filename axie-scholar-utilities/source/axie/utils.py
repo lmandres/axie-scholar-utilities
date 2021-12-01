@@ -2,6 +2,7 @@ import os
 import json
 import logging
 
+from cryptography.fernet import Fernet
 from eth_account.messages import encode_defunct
 import requests
 from requests.adapters import HTTPAdapter
@@ -78,6 +79,31 @@ def check_balance(account, token='slp'):
     return int(balance)
 
 
+def check_file(file):
+    if not os.path.isfile(file):
+        logging.critical('Please provide a correct path to the file. '
+                         f'Path provided: {file}')
+        return False
+    return True
+
+
+def check_ronin(roninIn):
+
+    checkRonin = False
+
+    if len(roninIn) == 46 and roninIn.startswith('ronin:'):
+        # Make sure is a valid Hex
+        try:
+            int(roninIn[6:], 16)
+            checkRonin = True
+        except ValueError:
+            pass
+    else:
+        logging.info(f'Ronin provided ({roninIn}) looks wrong, try again.')
+
+    return checkRonin
+
+
 def get_nonce(account):
     w3 = Web3(
             Web3.HTTPProvider(
@@ -89,14 +115,19 @@ def get_nonce(account):
     return nonce
 
 
-def load_json(json_file):
+def load_json(json_file, encryptionKey=None):
     # This is a safe guard, it should never raise as we check this in the CLI.
     if not os.path.isfile(json_file):
         raise Exception(f"File path {json_file} does not exist. "
                         f"Please provide a correct one")
     try:
-        with open(json_file, encoding='utf-8') as f:
-            data = json.load(f)
+        with open(json_file, "rb") as f:
+            if encryptionKey:
+                cipher = Fernet(encryptionKey)
+                decrypteddata = cipher.decrypt(f.read()).decode("utf-8")
+                data = json.loads(decrypteddata)
+            else:
+                data = json.load(f)
     except json.decoder.JSONDecodeError:
         raise Exception(f"File in path {json_file} is not a correctly encoded JSON.")
     return data
