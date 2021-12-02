@@ -12,13 +12,16 @@ from kivy.app import App
 from kivy.core.window import Window
 from kivy.uix.screenmanager import ScreenManager
 
+os.makedirs('logs', exist_ok=True)
 import gui
+from gui.DatabaseReader import DatabaseReader
+from gui.EnterPaymentsScreen import EnterPaymentsScreen
+from gui.EnterSecretsScreen import EnterSecretsScreen
 from gui.FileChooserListScreen import FileChooserListScreen
 from gui.MainMenuScreen import MainMenuScreen
 from gui.ManagerRoninScreen import ManagerRoninScreen
 from gui.PasswordScreen import PasswordScreen
 
-os.makedirs('logs', exist_ok=True)
 from axie import AxieClaimsManager
 from axie import AxiePaymentsManager
 from axie.utils import load_json
@@ -31,20 +34,22 @@ class AppScreens(ScreenManager):
     mainMenuScreen = None
     unlockScreen = None
     encryptionKey = None
-    loggingLabel = None
 
     def __init__(self):
         super(AppScreens, self).__init__()
 
         self.config = configparser.ConfigParser()
         self.config.read("config.ini")
+        self.dbreader = DatabaseReader(self.config["DEFAULT"]["DATABASE_FILE"])
+        self.dbreader.createDatabaseTables()
 
         Window.maximize()
+        self.openMainMenuScreen()
 
-        if not os.path.exists(self.config["DEFAULT"]["SECRETS_FILE"]):
-            self.openNewPasswordScreen()
-        else:
-            self.openUnlockScreen()
+        #if not os.path.exists(self.config["DEFAULT"]["SECRETS_FILE"]):
+        #    self.openNewPasswordScreen()
+        #else:
+        #    self.openUnlockScreen()
 
     def openNewPasswordScreen(self, errorText=""):
 
@@ -124,17 +129,32 @@ class AppScreens(ScreenManager):
             else:
                 self.displayedScreen = ManagerRoninScreen()
         elif nextScreenIn == "FileChooserListScreenASUJSON":
-            self.displayedScreen = FileChooserListScreen(filters=["*.json"])
+            self.displayedScreen = FileChooserListScreen(
+                filters=["*.json"],
+                openButtonLabel="Open Axie Scholar Utilities Payments JSON"
+            )
+        elif nextScreenIn == "EnterPaymentsScreen":
+            payments = load_json(self.config["DEFAULT"]["PAYMENTS_FILE"].strip(), self.encryptionKey)
+            self.displayedScreen = EnterPaymentsScreen(payments=payments)
+        elif nextScreenIn == "EnterSecretsScreen":
+            payments = load_json(self.config["DEFAULT"]["PAYMENTS_FILE"].strip(), self.encryptionKey)
+            secrets = load_json(self.config["DEFAULT"]["SECRETS_FILE"].strip(), self.encryptionKey)
+            self.displayedScreen = EnterSecretsScreen(payments=payments, secrets=secrets)
         self.add_widget(self.displayedScreen)
 
     def closeDisplayedScreen(self):
         self.remove_widget(self.displayedScreen)
         self.openMainMenuScreen()
 
+    # This method needs to be rewritten according to new methods in CLI library.
     def runUpdate(
         self,
-        managerRoninID=None,
-        scholarCSV=[]
+        managerRoninIDIn=None,
+        scholarCSVRowsIn=[],
+        paymentsJSONFileIn="",
+        secretsJSONFileIn="",
+        paymentsDictIn={},
+        secretsDictIn={}
     ):
         cipher = Fernet(self.encryptionKey)
 
@@ -144,27 +164,57 @@ class AppScreens(ScreenManager):
         if not os.path.exists(self.config["DEFAULT"]["PAYMENTS_FILE"].strip()):
             with open(self.config["DEFAULT"]["PAYMENTS_FILE"].strip(), 'wb') as f:
                 f.write(cipher.encrypt(b"{}"))
-            
-        secrets = load_json(self.config["DEFAULT"]["SECRETS_FILE"].strip(), self.encryptionKey)
+
         payments = load_json(self.config["DEFAULT"]["PAYMENTS_FILE"].strip(), self.encryptionKey)
+        secrets = load_json(self.config["DEFAULT"]["SECRETS_FILE"].strip(), self.encryptionKey)
 
-        outputText = "Name,AccountAddress,"
-        outputText += "ScholarPayoutAddress,ScholarPercent,ScholarPayout,"
-        outputText += "TrainerPayoutAddress,TrainerPercent,TrainerPayout\n"
+        managerRoninID = None
+        if managerRoninIDIn:
+            managerRoninID = managerRoninIDIn
+        elif "Manager" in payments.keys():
+            managerRoninID = payments["Manager"]
 
-        if managerRoninID:
-            payments["Manager"] = managerRoninID
-        if scholarCSV:
-            for scholarItem in scholarCSVRows:
+        if paymentsJSONFileIn:
+            paymentsIn = load_json(paymentsJSONFileIn)
+            if not "Scholars" in payments.keys():
+                payments["Scholars"] = []
+            payments["Scholars"].extend(paymentsIn["Scholars"])
+            with open(self.config["DEFAULT"]["PAYMENTS_FILE"].strip(), 'wb') as f:
+                f.write(cipher.encrypt(json.dumps(payments, ensure_ascii=False, indent=4).encode("utf-8")))
+
+        if secretsJSONFileIn:
+            secretsIn = load_json(secretsJSONFileIn)
+            secrets.update(secretsIn)
+            with open(self.config["DEFAULT"]["SECRETS_FILE"].strip(), 'wb') as f:
+                f.write(cipher.encrypt(json.dumps(secrets, ensure_ascii=False, indent=4).encode("utf-8")))
+
+        if paymentsDictIn:
+            if not "Scholars" in payments.keys():
+                payments["Scholars"] = []
+            payments["Scholars"] = paymentsDictIn["Scholars"]
+            with open(self.config["DEFAULT"]["PAYMENTS_FILE"].strip(), 'wb') as f:
+                f.write(cipher.encrypt(json.dumps(payments, ensure_ascii=False, indent=4).encode("utf-8")))
+
+        if secretsDictIn:
+            secrets = secretsDictIn
+            with open(self.config["DEFAULT"]["SECRETS_FILE"].strip(), 'wb') as f:
+                f.write(cipher.encrypt(json.dumps(secrets, ensure_ascii=False, indent=4).encode("utf-8")))
+
+        if managerRoninIDIn or scholarCSVRowsIn:
+            if not managerRoninID and "Manager" in payments.keys():
+                managerRoninID = payments["Manager"]
+            outputText = "Name,AccountAddress,"
+            outputText += "ScholarPayoutAddress,ScholarPercent,ScholarPayout,"
+            outputText += "TrainerPayoutAddress,TrainerPercent,TrainerPayout\n"
+            for scholarItem in scholarCSVRowsIn:
                 outputText += ",".join([columnItem for columnItem in scholarItem]) + "\n"
-
-        if "Manager" in payments.keys() and payments["Manager"]:
-            self.generatePaymentsFile(
-                payments["Manager"],
-                outputText,
-                self.config["DEFAULT"]["PAYMENTS_FILE"].strip(),
-                self.encryptionKey
-            )
+            if managerRoninID:
+                self.generatePaymentsFile(
+                    managerRoninID,
+                    outputText,
+                    self.config["DEFAULT"]["PAYMENTS_FILE"].strip(),
+                    self.encryptionKey
+                ) 
 
     def generatePaymentsFile(self, managerRoninID, csvFileStr, payments_file_path, encryptionKey):
         scholars_list = []

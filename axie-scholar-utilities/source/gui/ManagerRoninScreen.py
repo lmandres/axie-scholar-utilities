@@ -51,7 +51,7 @@ class ManagerRoninScreen(Screen):
         root = instance.parent.parent.parent.parent
         if checkRonin:
             root.closeDisplayedScreen()
-            root.runUpdate(managerRoninID=self.roninID.text)
+            root.runUpdate(managerRoninIDIn=self.roninID.text)
         else:
             self.errorLabel.text = f'Ronin provided ({self.roninID.text}) looks wrong, try again.'
             self.roninID.text = ""

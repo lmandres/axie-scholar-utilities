@@ -66,6 +66,7 @@ requests==2.26.0
 requests-mock==1.9.3
 rlp==2.0.1
 six==1.16.0
+tinyaes==1.0.2
 toml==0.10.2
 toolz==0.11.2
 typing-extensions==3.10.0.2

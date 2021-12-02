@@ -8,33 +8,32 @@ from kivy.uix.screenmanager import Screen
 
 class FileChooserListScreen(Screen):
 
+    openButton = None
     fileChooser = None
 
     def __init__(self, **kwargs):
 
         def buttonCallback(instance):
             root = instance.parent.parent.parent
-            if instance.text == "Open":
-                print(self.fileChooser.selection)
-            elif instance.text == "Cancel":
+            if instance.text == "Cancel":
+                root.closeDisplayedScreen()
+
+        def chooseEntryCallback(instance, selection, touch):
+            root = instance.parent.parent.parent
+            if len(selection):
+                root.runUpdate(paymentsJSONFileIn=selection[0])
                 root.closeDisplayedScreen()
 
         filters = kwargs.pop("filters", [])
+        openButtonLabel = kwargs.pop("openButtonLabel", "Open")
         super(FileChooserListScreen, self).__init__()
         layoutRows = BoxLayout(orientation="vertical")
 
         self.fileChooser = FileChooserListView()
         self.fileChooser.path = os.getcwd()
         self.fileChooser.filters = filters
+        self.fileChooser.bind(on_submit=chooseEntryCallback)
         layoutRows.add_widget(self.fileChooser)
-
-        openButton = Button(
-            text="Open",
-            size_hint=(1, None),
-            height=30
-        )
-        openButton.bind(on_press=buttonCallback)
-        layoutRows.add_widget(openButton)
 
         cancelButton = Button(
             text="Cancel",
