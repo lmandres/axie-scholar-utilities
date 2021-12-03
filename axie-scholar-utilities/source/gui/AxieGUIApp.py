@@ -135,34 +135,27 @@ class AppScreens(ScreenManager):
             )
         elif nextScreenIn == "ManageScholarsScreen":
             self.displayedScreen = ManageTableScreen(
-                textFields=[
-                    "scholarName",
-                    "scholarAddress",
-                    "scholarPayoutAddress",
-                    "scholarPercent",
-                    "scholarPayout"
+                keyItems=[
+                    ("scholarName", "textinput",),
+                    ("scholarAddress", "addressinput",),
+                    ("scholarPayoutAddress", "addressinput",),
+                    ("scholarPercent", "textinput",),
+                    ("scholarPayout", "textinput",)
                 ],
                 rowIDColumn="scholarID",
-                addressColumns=[
-                    "scholarAddress",
-                    "scholarPayoutAddress"
-                ],
                 rowData=self.dbreader.getScholars(),
                 updateCallback=self.dbreader.updateScholars,
                 deleteCallback=self.dbreader.deleteScholars
             )
         elif nextScreenIn == "ManageTrainersScreen":
             self.displayedScreen = ManageTableScreen(
-                textFields=[
-                    "trainerName",
-                    "trainerPayoutAddress",
-                    "trainerPercent",
-                    "trainerPayout"
+                keyItems=[
+                    ("trainerName", "textinput",),
+                    ("trainerPayoutAddress", "addressinput",),
+                    ("trainerPercent", "textinput",),
+                    ("trainerPayout", "textinput",)
                 ],
                 rowIDColumn="trainerID",
-                addressColumns=[
-                    "trainerPayoutAddress"
-                ],
                 rowData=self.dbreader.getTrainers(),
                 updateCallback=self.dbreader.updateTrainers,
                 deleteCallback=self.dbreader.deleteTrainers

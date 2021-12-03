@@ -261,12 +261,10 @@ class DatabaseReader(object):
             """
                 INSERT INTO trainers (
                     trainerName,
-                    trainerAddress,
                     trainerPayoutAddress,
                     trainerPercent,
                     trainerPayout
                 ) VALUES (
-                    ?,
                     ?,
                     ?,
                     ?,
@@ -280,7 +278,6 @@ class DatabaseReader(object):
                 UPDATE trainers
                 SET
                     trainerName = ?,
-                    trainerAddress = ?,
                     trainerPayoutAddress = ?,
                     trainerPercent = ?,
                     trainerPayout = ?

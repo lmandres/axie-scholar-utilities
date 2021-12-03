@@ -58,7 +58,7 @@ class MainMenuScreen(Screen):
         self.layoutRow.add_widget(
             Button(
                 text="Add/Edit/Delete Payouts",
-                disabled=False,
+                disabled=True,
                 on_press=buttonCallback
             )
         )
@@ -72,14 +72,14 @@ class MainMenuScreen(Screen):
         self.layoutRow.add_widget(
             Button(
                 text="Import Payouts from Axie Scholar Utilities JSON",
-                disabled=False,
+                disabled=True,
                 on_press=buttonCallback
             )
         )
         self.layoutRow.add_widget(
             Button(
                 text="Add/Edit Secrets",
-                disabled=False,
+                disabled=True,
                 on_press=buttonCallback
             )
         )

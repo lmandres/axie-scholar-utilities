@@ -7,6 +7,8 @@ from kivy.uix.screenmanager import Screen
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.textinput import TextInput
 
+from axie.utils import check_ronin
+
 
 class ManageTableScreen(Screen):
 
@@ -30,25 +32,15 @@ class ManageTableScreen(Screen):
         def resizeScreen(instance, width, height):
             self.scrollview.size = (width, height)
 
-        columnFields = kwargs.pop("textFields", [])
+        self.keyItems = kwargs.pop("keyItems", [])
         self.rowIDColumn = kwargs.pop("rowIDColumn", "")
-        self.addressColumns = kwargs.pop("addressColumns", [])
         self.rowData = kwargs.pop("rowData", [])
         self.updateTableCallback = kwargs.pop("updateCallback", lambda data: None)
         self.deleteTableCallback = kwargs.pop("deleteCallback", lambda data: None)
         super(ManageTableScreen, self).__init__(**kwargs)
 
-        self.keyItems = []
-        keys = columnFields.copy()
-        keys.append("")
-
-        for key in keys:
-            label = Label(text=key)
-            label.ID = None
-            label.rowIndex = len(self.csvItemRows)
-            label.field = None
-            self.keyItems.append(label)
-        self.populateRowData(self.rowData)
+        self.keyItems.append(("", "deletebutton",))
+        self.populateRowData(self.keyItems, self.rowData)
 
         self.scrollview = ScrollView(bar_width=20)
         self.scrollview.size_hint = (1, None)
@@ -96,24 +88,27 @@ class ManageTableScreen(Screen):
         )
         self.add_widget(layoutBox)
 
-    def populateRowData(self, rowDataIn):
+    def populateRowData(self, keyItemsIn, rowDataIn):
 
         self.csvItemRows = []
-        self.csvItemRows.append(self.keyItems)
+        labels = []
+        for keyItem in keyItemsIn:
+            labels.append(Label(text=keyItem[0]))
+        self.csvItemRows.append(labels)
 
-        for rowItem in self.rowData:
+        for rowItem in rowDataIn:
 
             csvItems = []
 
-            for dictKey in self.keyItems:
+            for keyItem in keyItemsIn:
 
                 csvText = ""
                 try:
-                    csvText = str(rowItem[dictKey.text])
+                    csvText = str(rowItem[keyItem[0]])
                 except KeyError:
                     pass
 
-                if dictKey.text == "":
+                if keyItem[1] == "deletebutton":
                     csvItem = Button(
                         text="Delete",
                         on_press=self.deleteCallback
@@ -121,18 +116,19 @@ class ManageTableScreen(Screen):
                     csvItem.columnID = rowItem[self.rowIDColumn]
                     csvItem.field = None
                     csvItem.rowIndex = len(self.csvItemRows)
-                else:
+                elif keyItem[1] == "textinput" or keyItem[1] == "addressinput":
+
                     csvItem = TextInput(
                         multiline=False,
                         text=csvText
                     )
                     csvItem.columnID = rowItem[self.rowIDColumn]
+                    csvItem.field = keyItem[0]
                     csvItem.rowIndex = len(self.csvItemRows)
-                    csvItem.field = dictKey.text
 
-                if dictKey.text in self.addressColumns:
-                    csvItem.bind(on_text_validate=self.onAddressEnter)
-                    csvItem.bind(text=self.onAddressText)
+                    if keyItem[1] == "addressinput":
+                        csvItem.bind(on_text_validate=self.onAddressEnter)
+                        csvItem.bind(text=self.onAddressText)
 
                 csvItems.append(csvItem)
 
@@ -176,7 +172,7 @@ class ManageTableScreen(Screen):
 
             rowIndex = len(self.csvItemRows)
             for keyIndex in range(0, len(self.keyItems), 1):
-                if self.keyItems[keyIndex].text == "":
+                if self.keyItems[keyIndex][1] == "deletebutton":
                     button = Button(
                         text="Delete",
                         on_press=self.deleteCallback
@@ -186,16 +182,16 @@ class ManageTableScreen(Screen):
                     button.rowIndex = rowIndex
                     csvItems.append(button)
                     self.layoutGrid.add_widget(button)
-                else:
+                elif self.keyItems[keyIndex][1] == "textinput" or self.keyItems[keyIndex][1] == "addressinput":
 
                     csvItem = TextInput()
 
-                    if self.keyItems[keyIndex].text in self.addressColumns:
+                    if self.keyItems[keyIndex][1] == "addressinput":
                         csvItem.bind(on_text_validate=self.onAddressEnter)
                         csvItem.bind(text=self.onAddressText)
 
                     csvItem.columnID = None
-                    csvItem.field = self.keyItems[keyIndex].text
+                    csvItem.field = self.keyItems[keyIndex][0]
                     csvItem.rowIndex = rowIndex
 
                     csvItems.append(csvItem)
