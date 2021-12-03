@@ -10,30 +10,49 @@ from axie.utils import check_ronin
 class ManagerRoninScreen(Screen):
 
     errorLabel = None
-    roninID = ""
+    teamName = None
+    roninID = None
 
     def __init__(self, **kwargs):
-        managerRoninID = kwargs.pop("managerRoninID", "")
+        teamName = kwargs.pop("teamName", "")
+        managerAddress = kwargs.pop("managerAddress", "")
         super(ManagerRoninScreen, self).__init__(**kwargs)
 
         layoutRow = BoxLayout(orientation="vertical")
-        layout = BoxLayout(orientation="horizontal")
-
         layoutRow.size_hint = (1, None)
-        layoutRow.size = (Window.width, 60)
+        layoutRow.size = (Window.width, 90)
         layoutRow.center = (Window.width/2, Window.height/2)
 
+        layout = BoxLayout(orientation="horizontal")
         layout.add_widget(
             Label(
-                text="Manager Ronin ID"
+                text="Team Name"
             )
         )
+
+        self.teamName = TextInput(
+            multiline=False,
+            cursor=True,
+            cursor_blink=True
+        )
+        self.teamName.text = teamName
+        self.teamName.bind(on_text_validate=self.onTextEnter)
+        layout.add_widget(self.teamName)
+        layoutRow.add_widget(layout)
+
+        layout = BoxLayout(orientation="horizontal")
+        layout.add_widget(
+            Label(
+                text="Manager Ronin Address"
+            )
+        )
+
         self.roninID = TextInput(
             multiline=False,
             cursor=True,
             cursor_blink=True
         )
-        self.roninID.text = managerRoninID
+        self.roninID.text = managerAddress
         self.roninID.bind(on_text_validate=self.onTextEnter)
         layout.add_widget(self.roninID)
         layoutRow.add_widget(layout)
@@ -51,7 +70,10 @@ class ManagerRoninScreen(Screen):
         root = instance.parent.parent.parent.parent
         if checkRonin:
             root.closeDisplayedScreen()
-            root.runUpdate(managerRoninIDIn=self.roninID.text)
-        else:
+            root.dbreader.updateTeamInfo(
+                teamName=self.teamName.text,
+                managerAddress=self.roninID.text
+            )
+        else: 
             self.errorLabel.text = f'Ronin provided ({self.roninID.text}) looks wrong, try again.'
             self.roninID.text = ""
