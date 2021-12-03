@@ -213,6 +213,104 @@ class DatabaseReader(object):
             deleteParams
         )
 
+    def getTrainers(self):
+        return self.queryDatabase(
+            """
+                SELECT
+                    trainerID,
+                    trainerName,
+                    trainerPayoutAddress,
+                    trainerPercent,
+                    trainerPayout
+                FROM
+                    trainers
+                ORDER BY
+                    trainerID,
+                    trainerName
+                ;
+            """
+        )
+
+    def updateTrainers(self, paramsDictIn):
+
+        insertParams = []
+        updateParams = []
+
+        for paramItem in paramsDictIn:
+            if not paramItem["trainerID"]:
+                insertParams.append(
+                    (
+                        paramItem["trainerName"],
+                        paramItem["trainerPayoutAddress"],
+                        paramItem["trainerPercent"],
+                        paramItem["trainerPayout"],
+                    )
+                )
+            else:
+                updateParams.append(
+                    (
+                        paramItem["trainerName"],
+                        paramItem["trainerPayoutAddress"],
+                        paramItem["trainerPercent"],
+                        paramItem["trainerPayout"],
+                        paramItem["trainerID"],
+                    )
+                )
+
+        self.updateDatabaseMany(
+            """
+                INSERT INTO trainers (
+                    trainerName,
+                    trainerAddress,
+                    trainerPayoutAddress,
+                    trainerPercent,
+                    trainerPayout
+                ) VALUES (
+                    ?,
+                    ?,
+                    ?,
+                    ?,
+                    ?
+                );
+            """,
+            insertParams
+        )
+        self.updateDatabaseMany(
+            """
+                UPDATE trainers
+                SET
+                    trainerName = ?,
+                    trainerAddress = ?,
+                    trainerPayoutAddress = ?,
+                    trainerPercent = ?,
+                    trainerPayout = ?
+                WHERE
+                    trainerID = ?
+                ;
+            """,
+            updateParams
+        )
+
+    def deleteTrainers(self, paramsDictIn):
+
+        deleteParams = []
+
+        for paramItem in paramsDictIn:
+            if paramItem["trainerID"]:
+                deleteParams.append((paramItem["trainerID"],))
+        
+        self.updateDatabaseMany(
+            """
+                DELETE
+                FROM
+                    trainers
+                WHERE
+                    trainerID = ?
+                ;
+            """,
+            deleteParams
+        )
+
     def updateTeamInfo(self, teamName="", managerAddress=""):
         self.setSetting("Team Name", teamName)
         self.setSetting("Manager Address", managerAddress)

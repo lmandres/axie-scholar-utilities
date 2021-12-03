@@ -17,7 +17,7 @@ from gui.EnterSecretsScreen import EnterSecretsScreen
 from gui.FileChooserListScreen import FileChooserListScreen
 from gui.MainMenuScreen import MainMenuScreen
 from gui.ManagerRoninScreen import ManagerRoninScreen
-from gui.ManageScholarsScreen import ManageScholarsScreen
+from gui.ManageTableScreen import ManageTableScreen
 from gui.PasswordScreen import PasswordScreen
 
 from axie import AxieClaimsManager
@@ -134,8 +134,39 @@ class AppScreens(ScreenManager):
                 openButtonLabel="Open Axie Scholar Utilities Payments JSON"
             )
         elif nextScreenIn == "ManageScholarsScreen":
-            scholars = self.dbreader.getScholars()
-            self.displayedScreen = ManageScholarsScreen(scholars=scholars)
+            self.displayedScreen = ManageTableScreen(
+                textFields=[
+                    "scholarName",
+                    "scholarAddress",
+                    "scholarPayoutAddress",
+                    "scholarPercent",
+                    "scholarPayout"
+                ],
+                rowIDColumn="scholarID",
+                addressColumns=[
+                    "scholarAddress",
+                    "scholarPayoutAddress"
+                ],
+                rowData=self.dbreader.getScholars(),
+                updateCallback=self.dbreader.updateScholars,
+                deleteCallback=self.dbreader.deleteScholars
+            )
+        elif nextScreenIn == "ManageTrainersScreen":
+            self.displayedScreen = ManageTableScreen(
+                textFields=[
+                    "trainerName",
+                    "trainerPayoutAddress",
+                    "trainerPercent",
+                    "trainerPayout"
+                ],
+                rowIDColumn="trainerID",
+                addressColumns=[
+                    "trainerPayoutAddress"
+                ],
+                rowData=self.dbreader.getTrainers(),
+                updateCallback=self.dbreader.updateTrainers,
+                deleteCallback=self.dbreader.deleteTrainers
+            )
         elif nextScreenIn == "EnterPaymentsScreen":
             payments = load_json(self.config["DEFAULT"]["PAYMENTS_FILE"].strip(), self.encryptionKey)
             self.displayedScreen = EnterPaymentsScreen(payments=payments)

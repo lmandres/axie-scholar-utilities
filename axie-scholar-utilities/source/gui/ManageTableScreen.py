@@ -8,104 +8,47 @@ from kivy.uix.scrollview import ScrollView
 from kivy.uix.textinput import TextInput
 
 
-class ManageScholarsScreen(Screen):
+class ManageTableScreen(Screen):
 
     keyItems = []
     csvItemRows = []
     deleteItemRows = []
+
     layoutRows = None
     layoutBox = None
     saveAndExitButton = None
     scrollview = None
+
+    addressColumns = []
+    rowIDColumn = ""
+    rowData = []
+    updateTableCallback = lambda data: None
+    deleteTableCallback = lambda data: None
 
     def __init__(self, **kwargs):
         
         def resizeScreen(instance, width, height):
             self.scrollview.size = (width, height)
 
-        def onAddressEnter(instance):
-
-            checkRonin = check_ronin(instance.text)
-            if checkRonin:
-                instance.background_color = (1, 1, 1, 1)
-                self.saveAndExitButton.disabled = False
-            else:
-                instance.background_color = (1, 0, 0, 1)
-                self.saveAndExitButton.disabled = True
-
-        def onAddressText(instance, value):
-
-            checkRonin = check_ronin(value)
-            if checkRonin:
-                instance.background_color = (1, 1, 1, 1)
-                self.saveAndExitButton.disabled = False
-            else:
-                self.saveAndExitButton.disabled = True
-
-        scholars = kwargs.pop("scholars", [])
-        super(ManageScholarsScreen, self).__init__(**kwargs)
+        columnFields = kwargs.pop("textFields", [])
+        self.rowIDColumn = kwargs.pop("rowIDColumn", "")
+        self.addressColumns = kwargs.pop("addressColumns", [])
+        self.rowData = kwargs.pop("rowData", [])
+        self.updateTableCallback = kwargs.pop("updateCallback", lambda data: None)
+        self.deleteTableCallback = kwargs.pop("deleteCallback", lambda data: None)
+        super(ManageTableScreen, self).__init__(**kwargs)
 
         self.keyItems = []
-        self.csvItemRows = []
-
-        keys = [
-            "scholarName",
-            "scholarAddress",
-            "scholarPayoutAddress",
-            "scholarPercent",
-            "scholarPayout"
-        ]
+        keys = columnFields.copy()
         keys.append("")
 
-        rowIndex = len(self.csvItemRows)
         for key in keys:
             label = Label(text=key)
             label.ID = None
-            label.rowIndex = rowIndex
+            label.rowIndex = len(self.csvItemRows)
             label.field = None
             self.keyItems.append(label)
-        self.csvItemRows.append(self.keyItems)
-
-        rowIndex = len(self.csvItemRows)
-        for scholar in scholars:
-
-            csvItems = []
-
-            for dictKey in self.keyItems:
-
-                csvText = ""
-                try:
-                    csvText = str(scholar[dictKey.text])
-                except KeyError:
-                    pass
-
-                if dictKey.text == "":
-                    csvItem = Button(
-                        text="Delete",
-                        on_press=self.deleteCallback
-                    )
-                    csvItem.ID = scholar["scholarID"]
-                    csvItem.field = None
-                    csvItem.rowIndex = rowIndex
-                else:
-                    csvItem = TextInput(
-                        multiline=False,
-                        text=csvText
-                    )
-                    csvItem.ID = scholar["scholarID"]
-                    csvItem.rowIndex = rowIndex
-                    csvItem.field = dictKey.text
-
-                if dictKey.text in [
-                    "scholarAddress",
-                    "scholarPayoutAddress"
-                ]:
-                    csvItem.bind(on_text_validate=onAddressEnter)
-                    csvItem.bind(text=onAddressText)
-
-                csvItems.append(csvItem)
-
-            self.csvItemRows.append(csvItems)
+        self.populateRowData(self.rowData)
 
         self.scrollview = ScrollView(bar_width=20)
         self.scrollview.size_hint = (1, None)
@@ -117,9 +60,9 @@ class ManageScholarsScreen(Screen):
 
         layoutBox = BoxLayout(orientation="vertical")
         self.layoutGrid = GridLayout(
-            cols=6,
+            cols=len(self.keyItems),
             row_force_default=True,
-            row_default_height=40
+            row_default_height=30
         )
 
         for csvItemRow in self.csvItemRows:
@@ -153,6 +96,67 @@ class ManageScholarsScreen(Screen):
         )
         self.add_widget(layoutBox)
 
+    def populateRowData(self, rowDataIn):
+
+        self.csvItemRows = []
+        self.csvItemRows.append(self.keyItems)
+
+        for rowItem in self.rowData:
+
+            csvItems = []
+
+            for dictKey in self.keyItems:
+
+                csvText = ""
+                try:
+                    csvText = str(rowItem[dictKey.text])
+                except KeyError:
+                    pass
+
+                if dictKey.text == "":
+                    csvItem = Button(
+                        text="Delete",
+                        on_press=self.deleteCallback
+                    )
+                    csvItem.columnID = rowItem[self.rowIDColumn]
+                    csvItem.field = None
+                    csvItem.rowIndex = len(self.csvItemRows)
+                else:
+                    csvItem = TextInput(
+                        multiline=False,
+                        text=csvText
+                    )
+                    csvItem.columnID = rowItem[self.rowIDColumn]
+                    csvItem.rowIndex = len(self.csvItemRows)
+                    csvItem.field = dictKey.text
+
+                if dictKey.text in self.addressColumns:
+                    csvItem.bind(on_text_validate=self.onAddressEnter)
+                    csvItem.bind(text=self.onAddressText)
+
+                csvItems.append(csvItem)
+
+            self.csvItemRows.append(csvItems)
+
+    def onAddressEnter(self, instance):
+
+        checkRonin = check_ronin(instance.text)
+        if checkRonin:
+            instance.background_color = (1, 1, 1, 1)
+            self.saveAndExitButton.disabled = False
+        else:
+            instance.background_color = (1, 0, 0, 1)
+            self.saveAndExitButton.disabled = True
+
+    def onAddressText(self, instance, value):
+
+        checkRonin = check_ronin(value)
+        if checkRonin:
+            instance.background_color = (1, 1, 1, 1)
+            self.saveAndExitButton.disabled = False
+        else:
+            self.saveAndExitButton.disabled = True
+
     def deleteCallback(self, instance):
         root = instance.parent.parent.parent.parent.parent.parent
 
@@ -177,18 +181,25 @@ class ManageScholarsScreen(Screen):
                         text="Delete",
                         on_press=self.deleteCallback
                     )
-                    button.ID = None
+                    button.columnID = None
                     button.field = None
                     button.rowIndex = rowIndex
                     csvItems.append(button)
                     self.layoutGrid.add_widget(button)
                 else:
-                    newText = TextInput()
-                    newText.ID = None
-                    newText.field = self.keyItems[keyIndex].text
-                    newText.rowIndex = rowIndex
-                    csvItems.append(newText)
-                    self.layoutGrid.add_widget(newText)
+
+                    csvItem = TextInput()
+
+                    if self.keyItems[keyIndex].text in self.addressColumns:
+                        csvItem.bind(on_text_validate=self.onAddressEnter)
+                        csvItem.bind(text=self.onAddressText)
+
+                    csvItem.columnID = None
+                    csvItem.field = self.keyItems[keyIndex].text
+                    csvItem.rowIndex = rowIndex
+
+                    csvItems.append(csvItem)
+                    self.layoutGrid.add_widget(csvItem)
 
             self.csvItemRows.append(csvItems)
             self.layoutGrid.height = 30 * len(self.csvItemRows)
@@ -199,18 +210,19 @@ class ManageScholarsScreen(Screen):
             for rowIndex in range(1, len(self.csvItemRows), 1):
                 newDict = {}
                 for csvItem in self.csvItemRows[rowIndex]:
-                    newDict["scholarID"] = csvItem.ID
+                    newDict[self.rowIDColumn] = csvItem.columnID
                     newDict[csvItem.field] = csvItem.text
                 queryParams.append(newDict)
-            root.dbreader.updateScholars(queryParams)
+            self.updateTableCallback(queryParams)
 
             deleteParams = []
             for rowIndex in range(1, len(self.deleteItemRows), 1):
                 newDict = {}
                 for csvItem in self.deleteItemRows[rowIndex]:
-                    newDict["scholarID"] = csvItem.ID
-                deleteParams.append(newDict)
-            root.dbreader.deleteScholars(deleteParams)
+                    newDict[self.rowIDColumn] = csvItem.columnID
+                if newDict[self.rowIDColumn]:
+                    deleteParams.append(newDict)
+            self.deleteTableCallback(deleteParams)
 
             root.closeDisplayedScreen()
 

@@ -17,6 +17,8 @@ class MainMenuScreen(Screen):
                 root.openDisplayedScreen(nextScreenIn="ManagerRoninScreen")
             elif instance.text == "Manage Scholar Roster":
                 root.openDisplayedScreen(nextScreenIn="ManageScholarsScreen")
+            elif instance.text == "Manage Trainer Roster":
+                root.openDisplayedScreen(nextScreenIn="ManageTrainersScreen")
             elif instance.text == "Import Payouts from Axie Scholar Utilities CSV":
                 print(instance.text)
             elif instance.text == "Import Payouts from Axie Scholar Utilities JSON":
@@ -44,6 +46,12 @@ class MainMenuScreen(Screen):
         self.layoutRow.add_widget(
             Button(
                 text="Manage Scholar Roster",
+                on_press=buttonCallback
+            )
+        )
+        self.layoutRow.add_widget(
+            Button(
+                text="Manage Trainer Roster",
                 on_press=buttonCallback
             )
         )
