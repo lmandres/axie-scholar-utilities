@@ -23,7 +23,7 @@ class MainMenuScreen(Screen):
                 print(instance.text)
             elif instance.text == "Import Payouts from Axie Scholar Utilities JSON":
                 root.openDisplayedScreen(nextScreenIn="FileChooserListScreenASUJSON")
-            elif instance.text == "Add/Edit/Delete Payouts":
+            elif instance.text == "Manage Payouts":
                 root.openDisplayedScreen(nextScreenIn="EnterPaymentsScreen")
             elif instance.text == "Add/Edit Secrets":
                 root.openDisplayedScreen(nextScreenIn="EnterSecretsScreen")
@@ -57,8 +57,8 @@ class MainMenuScreen(Screen):
         )
         self.layoutRow.add_widget(
             Button(
-                text="Add/Edit/Delete Payouts",
-                disabled=True,
+                text="Manage Payouts",
+                disabled=False,
                 on_press=buttonCallback
             )
         )

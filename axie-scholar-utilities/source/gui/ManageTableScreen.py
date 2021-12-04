@@ -1,6 +1,7 @@
 from kivy.core.window import Window
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
+from kivy.uix.dropdown import DropDown
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
 from kivy.uix.screenmanager import Screen
@@ -8,6 +9,8 @@ from kivy.uix.scrollview import ScrollView
 from kivy.uix.textinput import TextInput
 
 from axie.utils import check_ronin
+
+from gui.DropDownButton import DropDownButton
 
 
 class ManageTableScreen(Screen):
@@ -130,6 +133,29 @@ class ManageTableScreen(Screen):
                         csvItem.bind(on_text_validate=self.onAddressEnter)
                         csvItem.bind(text=self.onAddressText)
 
+                elif keyItem[1] == "dropdownbutton":
+
+                    csvItemText = ""
+                    for keySelectItem in keyItem[2]:
+                        if keySelectItem[0] == rowItem[keyItem[0]]:
+                            csvItemText = keySelectItem[1]
+
+                    csvItem = DropDownButton(text=csvItemText)
+                    csvItem.itemID = rowItem[keyItem[0]]
+                    csvItem.columnID = rowItem[self.rowIDColumn]
+                    csvItem.field = keyItem[0]
+                    csvItem.rowIndex = len(self.csvItemRows)
+
+                    for dropDownItem in keyItem[2]:
+                        dropDownButton = Button(
+                            text=dropDownItem[1],
+                            size_hint=(1, None),
+                            height=30
+                        )
+                        dropDownButton.itemID = dropDownItem[0]
+                        dropDownButton.bind(on_press=csvItem.dropDownButtonCallback)
+                        csvItem.add_widget(dropDownButton)
+
                 csvItems.append(csvItem)
 
             self.csvItemRows.append(csvItems)
@@ -170,18 +196,21 @@ class ManageTableScreen(Screen):
 
             csvItems = []
 
-            rowIndex = len(self.csvItemRows)
             for keyIndex in range(0, len(self.keyItems), 1):
+
+                csvItem = None
+                csvGridItem = None
+
                 if self.keyItems[keyIndex][1] == "deletebutton":
-                    button = Button(
+
+                    csvItem = Button(
                         text="Delete",
                         on_press=self.deleteCallback
                     )
-                    button.columnID = None
-                    button.field = None
-                    button.rowIndex = rowIndex
-                    csvItems.append(button)
-                    self.layoutGrid.add_widget(button)
+                    csvItem.columnID = None
+                    csvItem.field = None
+                    csvItem.rowIndex = len(self.csvItemRows)
+
                 elif self.keyItems[keyIndex][1] == "textinput" or self.keyItems[keyIndex][1] == "addressinput":
 
                     csvItem = TextInput()
@@ -192,10 +221,33 @@ class ManageTableScreen(Screen):
 
                     csvItem.columnID = None
                     csvItem.field = self.keyItems[keyIndex][0]
-                    csvItem.rowIndex = rowIndex
+                    csvItem.rowIndex = len(self.csvItemRows)
 
-                    csvItems.append(csvItem)
-                    self.layoutGrid.add_widget(csvItem)
+                elif self.keyItems[keyIndex][1] == "dropdownbutton":
+
+                    csvItemText = ""
+                    for keySelectItem in self.keyItems[keyIndex][2]:
+                        if keySelectItem[0] == None:
+                            csvItemText = keySelectItem[1]
+
+                    csvItem = DropDownButton(text=csvItemText)
+                    csvItem.itemID = None
+                    csvItem.columnID = None
+                    csvItem.field = self.keyItems[keyIndex][0]
+                    csvItem.rowIndex = len(self.csvItemRows)
+
+                    for dropDownItem in self.keyItems[keyIndex][2]:
+                        dropDownButton = Button(
+                            text=dropDownItem[1],
+                            size_hint=(1, None),
+                            height=30
+                        )
+                        dropDownButton.itemID = dropDownItem[0]
+                        dropDownButton.bind(on_press=csvItem.dropDownButtonCallback)
+                        csvItem.add_widget(dropDownButton)
+
+                csvItems.append(csvItem)
+                self.layoutGrid.add_widget(csvItem)
 
             self.csvItemRows.append(csvItems)
             self.layoutGrid.height = 30 * len(self.csvItemRows)
@@ -207,7 +259,10 @@ class ManageTableScreen(Screen):
                 newDict = {}
                 for csvItem in self.csvItemRows[rowIndex]:
                     newDict[self.rowIDColumn] = csvItem.columnID
-                    newDict[csvItem.field] = csvItem.text
+                    try:
+                        newDict[csvItem.field] = csvItem.itemID
+                    except AttributeError:
+                        newDict[csvItem.field] = csvItem.text
                 queryParams.append(newDict)
             self.updateTableCallback(queryParams)
 
@@ -216,7 +271,6 @@ class ManageTableScreen(Screen):
                 newDict = {}
                 for csvItem in self.deleteItemRows[rowIndex]:
                     newDict[self.rowIDColumn] = csvItem.columnID
-                if newDict[self.rowIDColumn]:
                     deleteParams.append(newDict)
             self.deleteTableCallback(deleteParams)
 

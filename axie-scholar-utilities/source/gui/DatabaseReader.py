@@ -37,6 +37,13 @@ class DatabaseReader(object):
                     trainerPayout INTEGER
                 );
             """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS payments (
+                    paymentID INTEGER PRIMARY KEY AUTOINCREMENT,
+                    scholarID INTEGER NOT NULL,
+                    trainerID INTEGER
+                );
+            """)
             conn.commit()
 
     def setSetting(self, settingName, settingValue):
@@ -303,6 +310,88 @@ class DatabaseReader(object):
                     trainers
                 WHERE
                     trainerID = ?
+                ;
+            """,
+            deleteParams
+        )
+
+    def getPayments(self):
+        return self.queryDatabase(
+            """
+                SELECT
+                    paymentID,
+                    scholarID,
+                    trainerID
+                FROM
+                    payments
+                ORDER BY
+                    paymentID
+                ;
+            """
+        )
+
+    def updatePayments(self, paramsDictIn):
+
+        insertParams = []
+        updateParams = []
+
+        for paramItem in paramsDictIn:
+            if not paramItem["paymentID"]:
+                insertParams.append(
+                    (
+                        paramItem["scholarID"],
+                        paramItem["trainerID"],
+                    )
+                )
+            else:
+                updateParams.append(
+                    (
+                        paramItem["scholarID"],
+                        paramItem["trainerID"],
+                        paramItem["paymentID"],
+                    )
+                )
+
+        self.updateDatabaseMany(
+            """
+                INSERT INTO payments (
+                    scholarID,
+                    trainerID
+                ) VALUES (
+                    ?,
+                    ?
+                );
+            """,
+            insertParams
+        )
+        self.updateDatabaseMany(
+            """
+                UPDATE payments
+                SET
+                    scholarID = ?,
+                    trainerID = ?
+                WHERE
+                    paymentID = ?
+                ;
+            """,
+            updateParams
+        )
+
+    def deletePayments(self, paramsDictIn):
+
+        deleteParams = []
+
+        for paramItem in paramsDictIn:
+            if paramItem["paymentID"]:
+                deleteParams.append((paramItem["paymentID"],))
+        
+        self.updateDatabaseMany(
+            """
+                DELETE
+                FROM
+                    payments
+                WHERE
+                    paymentID = ?
                 ;
             """,
             deleteParams

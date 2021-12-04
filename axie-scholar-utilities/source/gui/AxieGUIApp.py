@@ -161,8 +161,22 @@ class AppScreens(ScreenManager):
                 deleteCallback=self.dbreader.deleteTrainers
             )
         elif nextScreenIn == "EnterPaymentsScreen":
-            payments = load_json(self.config["DEFAULT"]["PAYMENTS_FILE"].strip(), self.encryptionKey)
-            self.displayedScreen = EnterPaymentsScreen(payments=payments)
+            scholars = [(None, "--",)]
+            for scholar in self.dbreader.getScholars():
+                scholars.append((scholar["scholarID"], scholar["scholarName"],))
+            trainers = [(None, "--",)]
+            for trainer in self.dbreader.getTrainers():
+                trainers.append((trainer["trainerID"], trainer["trainerName"],))
+            self.displayedScreen = ManageTableScreen(
+                keyItems=[
+                    ("scholarID", "dropdownbutton", scholars,),
+                    ("trainerID", "dropdownbutton", trainers,)
+                ],
+                rowIDColumn="paymentID",
+                rowData=self.dbreader.getPayments(),
+                updateCallback=self.dbreader.updatePayments,
+                deleteCallback=self.dbreader.deletePayments
+            )
         elif nextScreenIn == "EnterSecretsScreen":
             payments = load_json(self.config["DEFAULT"]["PAYMENTS_FILE"].strip(), self.encryptionKey)
             secrets = load_json(self.config["DEFAULT"]["SECRETS_FILE"].strip(), self.encryptionKey)
