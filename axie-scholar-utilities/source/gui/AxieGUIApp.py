@@ -140,7 +140,8 @@ class AppScreens(ScreenManager):
                     ("scholarAddress", "addressinput",),
                     ("scholarPayoutAddress", "addressinput",),
                     ("scholarPercent", "textinput",),
-                    ("scholarPayout", "textinput",)
+                    ("scholarPayout", "textinput",),
+                    ("", "deletebutton",)
                 ],
                 rowIDColumn="scholarID",
                 rowData=self.dbreader.getScholars(),
@@ -153,7 +154,8 @@ class AppScreens(ScreenManager):
                     ("trainerName", "textinput",),
                     ("trainerPayoutAddress", "addressinput",),
                     ("trainerPercent", "textinput",),
-                    ("trainerPayout", "textinput",)
+                    ("trainerPayout", "textinput",),
+                    ("", "deletebutton",)
                 ],
                 rowIDColumn="trainerID",
                 rowData=self.dbreader.getTrainers(),
@@ -170,7 +172,8 @@ class AppScreens(ScreenManager):
             self.displayedScreen = ManageTableScreen(
                 keyItems=[
                     ("scholarID", "dropdownbutton", scholars,),
-                    ("trainerID", "dropdownbutton", trainers,)
+                    ("trainerID", "dropdownbutton", trainers,),
+                    ("", "deletebutton",)
                 ],
                 rowIDColumn="paymentID",
                 rowData=self.dbreader.getPayments(),
@@ -178,9 +181,17 @@ class AppScreens(ScreenManager):
                 deleteCallback=self.dbreader.deletePayments
             )
         elif nextScreenIn == "EnterSecretsScreen":
-            payments = load_json(self.config["DEFAULT"]["PAYMENTS_FILE"].strip(), self.encryptionKey)
-            secrets = load_json(self.config["DEFAULT"]["SECRETS_FILE"].strip(), self.encryptionKey)
-            self.displayedScreen = EnterSecretsScreen(payments=payments, secrets=secrets)
+            self.displayedScreen = ManageTableScreen(
+                keyItems=[
+                    ("scholarName", "label",),
+                    ("address", "addresslabel",),
+                    ("privateKey", "privatekeyinput",)
+                ],
+                rowIDColumn="secretID",
+                rowData=self.dbreader.getSecrets(),
+                updateCallback=self.dbreader.updateSecrets,
+                deleteCallback=self.dbreader.deleteSecrets
+            )
         self.add_widget(self.displayedScreen)
 
     def closeDisplayedScreen(self):

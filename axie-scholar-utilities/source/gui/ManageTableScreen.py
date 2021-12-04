@@ -42,7 +42,6 @@ class ManageTableScreen(Screen):
         self.deleteTableCallback = kwargs.pop("deleteCallback", lambda data: None)
         super(ManageTableScreen, self).__init__(**kwargs)
 
-        self.keyItems.append(("", "deletebutton",))
         self.populateRowData(self.keyItems, self.rowData)
 
         self.scrollview = ScrollView(bar_width=20)
@@ -107,7 +106,8 @@ class ManageTableScreen(Screen):
 
                 csvText = ""
                 try:
-                    csvText = str(rowItem[keyItem[0]])
+                    if rowItem[keyItem[0]]:
+                        csvText = str(rowItem[keyItem[0]])
                 except KeyError:
                     pass
 
@@ -119,7 +119,12 @@ class ManageTableScreen(Screen):
                     csvItem.columnID = rowItem[self.rowIDColumn]
                     csvItem.field = None
                     csvItem.rowIndex = len(self.csvItemRows)
-                elif keyItem[1] == "textinput" or keyItem[1] == "addressinput":
+
+                elif keyItem[1] in [
+                    "textinput",
+                    "addressinput",
+                    "privatekeyinput"
+                ]:
 
                     csvItem = TextInput(
                         multiline=False,
@@ -156,14 +161,20 @@ class ManageTableScreen(Screen):
                         dropDownButton.bind(on_press=csvItem.dropDownButtonCallback)
                         csvItem.add_widget(dropDownButton)
 
+                elif keyItem[1] == "label" or keyItem[1] == "addresslabel":
+
+                    csvItem = Label(text=csvText)
+                    csvItem.columnID = rowItem[self.rowIDColumn]
+                    csvItem.field = keyItem[0]
+                    csvItem.rowIndex = len(self.csvItemRows)
+
                 csvItems.append(csvItem)
 
             self.csvItemRows.append(csvItems)
 
     def onAddressEnter(self, instance):
 
-        checkRonin = check_ronin(instance.text)
-        if checkRonin:
+        if check_ronin(instance.text):
             instance.background_color = (1, 1, 1, 1)
             self.saveAndExitButton.disabled = False
         else:
@@ -172,8 +183,7 @@ class ManageTableScreen(Screen):
 
     def onAddressText(self, instance, value):
 
-        checkRonin = check_ronin(value)
-        if checkRonin:
+        if check_ronin(value):
             instance.background_color = (1, 1, 1, 1)
             self.saveAndExitButton.disabled = False
         else:
@@ -196,12 +206,12 @@ class ManageTableScreen(Screen):
 
             csvItems = []
 
-            for keyIndex in range(0, len(self.keyItems), 1):
+            for keyItem in self.keyItems:
 
                 csvItem = None
                 csvGridItem = None
 
-                if self.keyItems[keyIndex][1] == "deletebutton":
+                if keyItem[1] == "deletebutton":
 
                     csvItem = Button(
                         text="Delete",
@@ -211,32 +221,36 @@ class ManageTableScreen(Screen):
                     csvItem.field = None
                     csvItem.rowIndex = len(self.csvItemRows)
 
-                elif self.keyItems[keyIndex][1] == "textinput" or self.keyItems[keyIndex][1] == "addressinput":
+                elif keyItem[1] in [
+                    "textinput",
+                    "addressinput",
+                    "privatekeyinput"
+                ]:
 
                     csvItem = TextInput()
 
-                    if self.keyItems[keyIndex][1] == "addressinput":
+                    if keyItem[1] == "addressinput":
                         csvItem.bind(on_text_validate=self.onAddressEnter)
                         csvItem.bind(text=self.onAddressText)
 
                     csvItem.columnID = None
-                    csvItem.field = self.keyItems[keyIndex][0]
+                    csvItem.field = keyItem[0]
                     csvItem.rowIndex = len(self.csvItemRows)
 
-                elif self.keyItems[keyIndex][1] == "dropdownbutton":
+                elif keyItem[1] == "dropdownbutton":
 
                     csvItemText = ""
-                    for keySelectItem in self.keyItems[keyIndex][2]:
+                    for keySelectItem in keyItem[2]:
                         if keySelectItem[0] == None:
                             csvItemText = keySelectItem[1]
 
                     csvItem = DropDownButton(text=csvItemText)
                     csvItem.itemID = None
                     csvItem.columnID = None
-                    csvItem.field = self.keyItems[keyIndex][0]
+                    csvItem.field = keyItem[0]
                     csvItem.rowIndex = len(self.csvItemRows)
 
-                    for dropDownItem in self.keyItems[keyIndex][2]:
+                    for dropDownItem in keyItem[2]:
                         dropDownButton = Button(
                             text=dropDownItem[1],
                             size_hint=(1, None),
@@ -245,6 +259,13 @@ class ManageTableScreen(Screen):
                         dropDownButton.itemID = dropDownItem[0]
                         dropDownButton.bind(on_press=csvItem.dropDownButtonCallback)
                         csvItem.add_widget(dropDownButton)
+
+                elif keyItem[1] == "label" or keyItem[1] == "addresslabel":
+
+                    csvItem = Label()
+                    csvItem.columnID = rowItem[self.rowIDColumn]
+                    csvItem.field = keyItem[0]
+                    csvItem.rowIndex = len(self.csvItemRows)
 
                 csvItems.append(csvItem)
                 self.layoutGrid.add_widget(csvItem)
@@ -255,18 +276,38 @@ class ManageTableScreen(Screen):
         elif instance.text == "Save and Exit":
 
             queryParams = []
+            deleteParams = []
+
             for rowIndex in range(1, len(self.csvItemRows), 1):
                 newDict = {}
+                moveToDelete = False
                 for csvItem in self.csvItemRows[rowIndex]:
                     newDict[self.rowIDColumn] = csvItem.columnID
                     try:
                         newDict[csvItem.field] = csvItem.itemID
                     except AttributeError:
                         newDict[csvItem.field] = csvItem.text
-                queryParams.append(newDict)
+                        for keyItem in self.keyItems:
+                            if (
+                                keyItem[0] == csvItem.field and
+                                keyItem[1] in ["addressinput", "addresslabel"]
+                            ):
+                                if not check_ronin(csvItem.text):
+                                    moveToDelete = True
+                            elif (
+                                keyItem[0] == csvItem.field and
+                                keyItem[1] in ["privatekeyinput"]
+                            ):
+                                if True:
+                                    moveToDelete = True
+
+                if not moveToDelete:
+                    queryParams.append(newDict)
+                else:
+                    self.deleteItemRows.append(self.csvItemRows[rowIndex])
+                                
             self.updateTableCallback(queryParams)
 
-            deleteParams = []
             for rowIndex in range(1, len(self.deleteItemRows), 1):
                 newDict = {}
                 for csvItem in self.deleteItemRows[rowIndex]:

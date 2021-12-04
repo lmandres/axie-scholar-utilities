@@ -25,7 +25,7 @@ class MainMenuScreen(Screen):
                 root.openDisplayedScreen(nextScreenIn="FileChooserListScreenASUJSON")
             elif instance.text == "Manage Payouts":
                 root.openDisplayedScreen(nextScreenIn="EnterPaymentsScreen")
-            elif instance.text == "Add/Edit Secrets":
+            elif instance.text == "Manage Secrets":
                 root.openDisplayedScreen(nextScreenIn="EnterSecretsScreen")
             elif instance.text == "Run Claims and Auto-Payouts":
                 print(instance.text)
@@ -78,8 +78,8 @@ class MainMenuScreen(Screen):
         )
         self.layoutRow.add_widget(
             Button(
-                text="Add/Edit Secrets",
-                disabled=True,
+                text="Manage Secrets",
+                disabled=False,
                 on_press=buttonCallback
             )
         )

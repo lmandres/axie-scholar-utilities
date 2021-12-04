@@ -44,6 +44,13 @@ class DatabaseReader(object):
                     trainerID INTEGER
                 );
             """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS secrets (
+                    secretID INTEGER PRIMARY KEY AUTOINCREMENT,
+                    address TEXT NOT NULL,
+                    privateKey TEXT NOT NULL
+                );
+            """)
             conn.commit()
 
     def setSetting(self, settingName, settingValue):
@@ -392,6 +399,102 @@ class DatabaseReader(object):
                     payments
                 WHERE
                     paymentID = ?
+                ;
+            """,
+            deleteParams
+        )
+
+    def getSecrets(self):
+        return self.queryDatabase(
+            """
+                SELECT
+                    secrets.secretID,
+                    scholars.scholarName,
+                    scholars.scholarAddress AS address,
+                    secrets.privateKey
+                FROM
+                    scholars LEFT OUTER JOIN secrets ON
+                        scholars.scholarAddress = secrets.address AND
+                        secrets.address IS NOT NULL
+                UNION
+                SELECT
+                    null AS secretID,
+                    scholars.scholarName,
+                    scholars.scholarAddress AS address,
+                    null AS privateKey
+                FROM
+                    scholars LEFT OUTER JOIN secrets ON
+                        scholars.scholarAddress = secrets.address AND
+                        secrets.address IS NULL
+                ORDER BY
+                    scholarName,
+                    secretID
+                ;
+            """
+        )
+
+    def updateSecrets(self, paramsDictIn):
+
+        insertParams = []
+        updateParams = []
+
+        for paramItem in paramsDictIn:
+            if not paramItem["secretID"]:
+                insertParams.append(
+                    (
+                        paramItem["address"],
+                        paramItem["privateKey"],
+                    )
+                )
+            else:
+                updateParams.append(
+                    (
+                        paramItem["address"],
+                        paramItem["privateKey"],
+                        paramItem["secretID"],
+                    )
+                )
+
+        self.updateDatabaseMany(
+            """
+                INSERT INTO secrets (
+                    address,
+                    privateKey
+                ) VALUES (
+                    ?,
+                    ?
+                );
+            """,
+            insertParams
+        )
+        self.updateDatabaseMany(
+            """
+                UPDATE secrets
+                SET
+                    address = ?,
+                    privateKey = ?
+                WHERE
+                    secretID = ?
+                ;
+            """,
+            updateParams
+        )
+
+    def deleteSecrets(self, paramsDictIn):
+
+        deleteParams = []
+
+        for paramItem in paramsDictIn:
+            if paramItem["secretID"]:
+                deleteParams.append((paramItem["secretID"],))
+        
+        self.updateDatabaseMany(
+            """
+                DELETE
+                FROM
+                    secrets
+                WHERE
+                    secretID = ?
                 ;
             """,
             deleteParams
