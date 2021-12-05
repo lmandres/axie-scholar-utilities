@@ -22,13 +22,13 @@ class MainMenuScreen(Screen):
             elif instance.text == "Import Payouts from Axie Scholar Utilities CSV":
                 print(instance.text)
             elif instance.text == "Import Payouts from Axie Scholar Utilities JSON":
-                root.openDisplayedScreen(nextScreenIn="FileChooserListScreenASUJSON")
+                root.openDisplayedScreen(nextScreenIn="FileChooserListScreenPaymentsASUJSON")
             elif instance.text == "Manage Payouts":
                 root.openDisplayedScreen(nextScreenIn="EnterPaymentsScreen")
-            elif instance.text == "Manage Secrets":
-                root.openDisplayedScreen(nextScreenIn="EnterSecretsScreen")
             elif instance.text == "Run Claims and Auto-Payouts":
                 print(instance.text)
+            elif instance.text == "Import Secrets from Axie Scholar Utilities JSON":
+                root.openDisplayedScreen(nextScreenIn="FileChooserListScreenSecretsASUJSON")
             elif instance.text == "Exit":
                 App.get_running_app().stop()
 
@@ -72,13 +72,6 @@ class MainMenuScreen(Screen):
         self.layoutRow.add_widget(
             Button(
                 text="Import Payouts from Axie Scholar Utilities JSON",
-                disabled=True,
-                on_press=buttonCallback
-            )
-        )
-        self.layoutRow.add_widget(
-            Button(
-                text="Manage Secrets",
                 disabled=False,
                 on_press=buttonCallback
             )
@@ -93,7 +86,7 @@ class MainMenuScreen(Screen):
         self.layoutRow.add_widget(
             Button(
                 text="Import Secrets from Axie Scholar Utilities JSON",
-                disabled=True,
+                disabled=False,
                 on_press=buttonCallback
             )
         )

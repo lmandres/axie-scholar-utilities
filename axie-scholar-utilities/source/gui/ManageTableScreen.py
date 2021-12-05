@@ -59,6 +59,8 @@ class ManageTableScreen(Screen):
             row_default_height=30
         )
 
+        for keyItem in self.keyItems:
+            self.layoutGrid.add_widget(Label(text=keyItem[0]))
         for csvItemRow in self.csvItemRows:
             for csvItem in csvItemRow:
                 self.layoutGrid.add_widget(csvItem)
@@ -93,10 +95,6 @@ class ManageTableScreen(Screen):
     def populateRowData(self, keyItemsIn, rowDataIn):
 
         self.csvItemRows = []
-        labels = []
-        for keyItem in keyItemsIn:
-            labels.append(Label(text=keyItem[0]))
-        self.csvItemRows.append(labels)
 
         for rowItem in rowDataIn:
 
@@ -123,7 +121,8 @@ class ManageTableScreen(Screen):
                 elif keyItem[1] in [
                     "textinput",
                     "addressinput",
-                    "privatekeyinput"
+                    "privatekeyinput",
+                    "passwordinput"
                 ]:
 
                     csvItem = TextInput(
@@ -137,6 +136,9 @@ class ManageTableScreen(Screen):
                     if keyItem[1] == "addressinput":
                         csvItem.bind(on_text_validate=self.onAddressEnter)
                         csvItem.bind(text=self.onAddressText)
+
+                    if keyItem[1] == "passwordinput":
+                        csvItem.password = True
 
                 elif keyItem[1] == "dropdownbutton":
 
@@ -161,8 +163,10 @@ class ManageTableScreen(Screen):
                         dropDownButton.bind(on_press=csvItem.dropDownButtonCallback)
                         csvItem.add_widget(dropDownButton)
 
-                elif keyItem[1] == "label" or keyItem[1] == "addresslabel":
-
+                elif keyItem[1] in [
+                    "label",
+                    "addresslabel"
+                ]:
                     csvItem = Label(text=csvText)
                     csvItem.columnID = rowItem[self.rowIDColumn]
                     csvItem.field = keyItem[0]
@@ -260,7 +264,10 @@ class ManageTableScreen(Screen):
                         dropDownButton.bind(on_press=csvItem.dropDownButtonCallback)
                         csvItem.add_widget(dropDownButton)
 
-                elif keyItem[1] == "label" or keyItem[1] == "addresslabel":
+                elif keyItem[1] in [
+                    "label",
+                    "addresslabel"
+                ]:
 
                     csvItem = Label()
                     csvItem.columnID = rowItem[self.rowIDColumn]
@@ -278,10 +285,10 @@ class ManageTableScreen(Screen):
             queryParams = []
             deleteParams = []
 
-            for rowIndex in range(1, len(self.csvItemRows), 1):
+            for rowItem in self.csvItemRows:
                 newDict = {}
                 moveToDelete = False
-                for csvItem in self.csvItemRows[rowIndex]:
+                for csvItem in rowItem:
                     newDict[self.rowIDColumn] = csvItem.columnID
                     try:
                         newDict[csvItem.field] = csvItem.itemID
@@ -298,19 +305,19 @@ class ManageTableScreen(Screen):
                                 keyItem[0] == csvItem.field and
                                 keyItem[1] in ["privatekeyinput"]
                             ):
-                                if True:
+                                if False:
                                     moveToDelete = True
 
                 if not moveToDelete:
                     queryParams.append(newDict)
                 else:
-                    self.deleteItemRows.append(self.csvItemRows[rowIndex])
+                    self.deleteItemRows.append(rowItem)
                                 
             self.updateTableCallback(queryParams)
 
-            for rowIndex in range(1, len(self.deleteItemRows), 1):
+            for rowItem in self.deleteItemRows:
                 newDict = {}
-                for csvItem in self.deleteItemRows[rowIndex]:
+                for csvItem in rowItem:
                     newDict[self.rowIDColumn] = csvItem.columnID
                     deleteParams.append(newDict)
             self.deleteTableCallback(deleteParams)

@@ -128,10 +128,83 @@ class AppScreens(ScreenManager):
                 teamName=teamName,
                 managerAddress=managerAddress
             )
-        elif nextScreenIn == "FileChooserListScreenASUJSON":
+        elif nextScreenIn == "FileChooserListScreenPaymentsASUJSON":
+
+            def fileCallback(filePath):
+
+                try:
+                    records = load_json(filePath)
+
+                    scholarsList = []
+                    trainersList = []
+                    paymentsList = []
+
+                    for scholarItem in records["Scholars"]:
+                        if (
+                            "Name" in scholarItem.keys() and
+                            "AccountAddress" in scholarItem.keys() and
+                            "ScholarPayoutAddress" in scholarItem.keys()
+                        ):
+                            newDict = {
+                                "scholarName": scholarItem["Name"],
+                                "scholarAddress": scholarItem["AccountAddress"],
+                                "scholarPayoutAddress": scholarItem["ScholarPayoutAddress"]
+                            }
+                            newDict["scholarPayout"] = None
+                            if "ScholarPayout" in scholarItem.keys():
+                                newDict["scholarPayout"] = scholarItem["ScholarPayout"]
+                            newDict["scholarPercent"] = 30
+                            if "ScholarPercent" in scholarItem.keys():
+                                newDict["scholarPercent"] = scholarItem["ScholarPercent"]
+                            scholarsList.append(newDict)
+
+                        if "TrainerPayoutAddress" in scholarItem.keys():
+                            newDict = {
+                                "trainerName": "",
+                                "trainerPayoutAddress": scholarItem["TrainerPayoutAddress"]
+                            }
+                            newDict["trainerPayout"] = None
+                            if "TrainerPayout" in scholarItem.keys():
+                                newDict["trainerPayout"] = scholarItem["TrainerPayout"]
+                            newDict["trainerPercent"] = 1
+                            if "TrainerPercent" in scholarItem.keys():
+                                newDict["trainerPercent"] = scholarItem["TrainerPercent"]
+                            trainersList.append(newDict)
+
+                        if "AccountAddress" in scholarItem.keys():
+                            newDict = {
+                                "scholarAddress": scholarItem["AccountAddress"]
+                            }
+                            newDict["trainerPayoutAddress"] = None
+                            if "TrainerPayoutAddress" in scholarItem.keys():
+                                newDict["trainerPayoutAddress"] = scholarItem["TrainerPayoutAddress"]
+                            paymentsList.append(newDict)
+
+                    self.dbreader.updateScholarsFromFile(scholarsList)
+                    self.dbreader.updateTrainersFromFile(trainersList)
+                    self.dbreader.updatePaymentsFromFile(paymentsList)
+
+                except Exception as e:
+                    raise(e)
+
             self.displayedScreen = FileChooserListScreen(
                 filters=["*.json"],
-                openButtonLabel="Open Axie Scholar Utilities Payments JSON"
+                openButtonLabel="Open Axie Scholar Utilities Payments JSON",
+                chooseFileCallback=fileCallback
+            )
+        elif nextScreenIn == "FileChooserListScreenSecretsASUJSON":
+
+            def fileCallback(filePath):
+                try:
+                    records = load_json(filePath)
+                    self.dbreader.updateSecretsFromFile(records)
+                except Exception as e:
+                    raise(e)
+
+            self.displayedScreen = FileChooserListScreen(
+                filters=["*.json"],
+                openButtonLabel="Open Axie Scholar Utilities Payments JSON",
+                chooseFileCallback=fileCallback
             )
         elif nextScreenIn == "ManageScholarsScreen":
             self.displayedScreen = ManageTableScreen(
@@ -141,6 +214,7 @@ class AppScreens(ScreenManager):
                     ("scholarPayoutAddress", "addressinput",),
                     ("scholarPercent", "textinput",),
                     ("scholarPayout", "textinput",),
+                    ("scholarPrivateKey", "passwordinput",),
                     ("", "deletebutton",)
                 ],
                 rowIDColumn="scholarID",
@@ -163,12 +237,14 @@ class AppScreens(ScreenManager):
                 deleteCallback=self.dbreader.deleteTrainers
             )
         elif nextScreenIn == "EnterPaymentsScreen":
+
             scholars = [(None, "--",)]
             for scholar in self.dbreader.getScholars():
                 scholars.append((scholar["scholarID"], scholar["scholarName"],))
             trainers = [(None, "--",)]
             for trainer in self.dbreader.getTrainers():
                 trainers.append((trainer["trainerID"], trainer["trainerName"],))
+
             self.displayedScreen = ManageTableScreen(
                 keyItems=[
                     ("scholarID", "dropdownbutton", scholars,),
@@ -179,18 +255,6 @@ class AppScreens(ScreenManager):
                 rowData=self.dbreader.getPayments(),
                 updateCallback=self.dbreader.updatePayments,
                 deleteCallback=self.dbreader.deletePayments
-            )
-        elif nextScreenIn == "EnterSecretsScreen":
-            self.displayedScreen = ManageTableScreen(
-                keyItems=[
-                    ("scholarName", "label",),
-                    ("address", "addresslabel",),
-                    ("privateKey", "privatekeyinput",)
-                ],
-                rowIDColumn="secretID",
-                rowData=self.dbreader.getSecrets(),
-                updateCallback=self.dbreader.updateSecrets,
-                deleteCallback=self.dbreader.deleteSecrets
             )
         self.add_widget(self.displayedScreen)
 

@@ -25,7 +25,8 @@ class DatabaseReader(object):
                     scholarAddress TEXT NOT NULL,
                     scholarPayoutAddress TEXT NOT NULL,
                     scholarPercent REAL,
-                    scholarPayout INTEGER
+                    scholarPayout INTEGER,
+                    scholarPrivateKey TEXT
                 );
             """)
             conn.execute("""
@@ -42,13 +43,6 @@ class DatabaseReader(object):
                     paymentID INTEGER PRIMARY KEY AUTOINCREMENT,
                     scholarID INTEGER NOT NULL,
                     trainerID INTEGER
-                );
-            """)
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS secrets (
-                    secretID INTEGER PRIMARY KEY AUTOINCREMENT,
-                    address TEXT NOT NULL,
-                    privateKey TEXT NOT NULL
                 );
             """)
             conn.commit()
@@ -110,13 +104,17 @@ class DatabaseReader(object):
 
         return returnList
 
-    def queryDatabase(self, queryIn):
+    def queryDatabase(self, queryIn, paramsIn=None):
 
         returnList = []
 
         with sqlite3.connect(self.dbFilePath) as conn:
             cur = conn.cursor()
-            rows = cur.execute(queryIn)
+            rows = None
+            if not paramsIn:
+                rows = cur.execute(queryIn)
+            else:
+                rows = cur.execute(queryIn, paramsIn)
             returnList = self.generateQueryReturn(rows)
 
         return returnList
@@ -135,7 +133,8 @@ class DatabaseReader(object):
                     scholarAddress,
                     scholarPayoutAddress,
                     scholarPercent,
-                    scholarPayout
+                    scholarPayout,
+                    scholarPrivateKey
                 FROM
                     scholars
                 ORDER BY
@@ -202,6 +201,84 @@ class DatabaseReader(object):
                     scholarPayout = ?
                 WHERE
                     scholarID = ?
+                ;
+            """,
+            updateParams
+        )
+
+    def updateScholarsFromFile(self, paramsDictIn):
+
+        insertParams = []
+        updateParams = []
+
+        for paramItem in paramsDictIn:
+
+            scholarID = None
+
+            scholarRows = self.queryDatabase(
+                """
+                    SELECT
+                        scholarID
+                    FROM
+                        scholars
+                    WHERE
+                        scholarAddress = ?
+                    ;
+                """,
+                (paramItem["scholarAddress"],)
+            )
+            if scholarRows:
+                scholarID = scholarRows[0]["scholarID"]
+
+            if not scholarID:
+                insertParams.append(
+                    (
+                        paramItem["scholarName"],
+                        paramItem["scholarAddress"],
+                        paramItem["scholarPayoutAddress"],
+                        paramItem["scholarPercent"],
+                        paramItem["scholarPayout"],
+                    )
+                )
+            else:
+                updateParams.append(
+                    (
+                        paramItem["scholarName"],
+                        paramItem["scholarPayoutAddress"],
+                        paramItem["scholarPercent"],
+                        paramItem["scholarPayout"],
+                        paramItem["scholarAddress"],
+                    )
+                )
+
+        self.updateDatabaseMany(
+            """
+                INSERT INTO scholars (
+                    scholarName,
+                    scholarAddress,
+                    scholarPayoutAddress,
+                    scholarPercent,
+                    scholarPayout
+                ) VALUES (
+                    ?,
+                    ?,
+                    ?,
+                    ?,
+                    ?
+                );
+            """,
+            insertParams
+        )
+        self.updateDatabaseMany(
+            """
+                UPDATE scholars
+                SET
+                    scholarName = ?,
+                    scholarPayoutAddress = ?,
+                    scholarPercent = ?,
+                    scholarPayout = ?
+                WHERE
+                    scholarAddress = ?
                 ;
             """,
             updateParams
@@ -302,6 +379,78 @@ class DatabaseReader(object):
             updateParams
         )
 
+    def updateTrainersFromFile(self, paramsDictIn):
+
+        insertParams = []
+        updateParams = []
+
+        for paramItem in paramsDictIn:
+
+            trainerID = None
+            trainerRows = self.queryDatabase(
+                """
+                    SELECT
+                        trainerID
+                    FROM
+                        trainers
+                    WHERE
+                        trainerPayoutAddress = ?
+                    ;
+                """,
+                (paramItem["trainerPayoutAddress"],)
+            )
+            if trainerRows:
+                trainerID = trainerRows[0]["trainerID"]
+
+            if not trainerID:
+                insertParams.append(
+                    (
+                        paramItem["trainerName"],
+                        paramItem["trainerPayoutAddress"],
+                        paramItem["trainerPercent"],
+                        paramItem["trainerPayout"],
+                    )
+                )
+            else:
+                updateParams.append(
+                    (
+                        paramItem["trainerName"],
+                        paramItem["trainerPercent"],
+                        paramItem["trainerPayout"],
+                        paramItem["trainerPayoutAddress"],
+                    )
+                )
+
+        self.updateDatabaseMany(
+            """
+                INSERT INTO trainers (
+                    trainerName,
+                    trainerPayoutAddress,
+                    trainerPercent,
+                    trainerPayout
+                ) VALUES (
+                    ?,
+                    ?,
+                    ?,
+                    ?
+                );
+            """,
+            insertParams
+        )
+        self.updateDatabaseMany(
+            """
+                UPDATE trainers
+                SET
+                    trainerName = ?,
+                    trainerPercent = ?,
+                    trainerPayout = ?
+                WHERE
+                    trainerPayoutAddress = ?
+                ;
+            """,
+            updateParams
+        )
+
     def deleteTrainers(self, paramsDictIn):
 
         deleteParams = []
@@ -384,6 +533,89 @@ class DatabaseReader(object):
             updateParams
         )
 
+    def updatePaymentsFromFile(self, paramsDictIn):
+
+        insertParams = []
+
+        for paramItem in paramsDictIn:
+
+            scholarID = None
+            trainerID = None
+            paymentID = None
+
+            scholarRows = self.queryDatabase(
+                """
+                    SELECT
+                        scholarID
+                    FROM
+                        scholars
+                    WHERE
+                        scholarAddress = ?
+                    ;
+                """,
+                (paramItem["scholarAddress"],)
+            )
+            if scholarRows:
+                scholarID = scholarRows[0]["scholarID"]
+
+            trainerRows = self.queryDatabase(
+                """
+                    SELECT
+                        trainerID
+                    FROM
+                        trainers
+                    WHERE
+                        trainerPayoutAddress = ?
+                    ;
+                """,
+                (paramItem["trainerPayoutAddress"],)
+            )
+            if trainerRows:
+                trainerID = trainerRows[0]["trainerID"]
+
+            paymentParams = (scholarID,)
+            paymentWhereClause = "trainerID IS NULL"
+            if trainerID:
+                paymentParams = (scholarID, trainerID,)
+                paymentWhereClause = "trainerID = ?"
+
+            paymentQuery = """
+                SELECT
+                    paymentID
+                FROM
+                    payments
+                WHERE
+                    scholarID = ? AND
+                    {}
+                ;
+            """.format(paymentWhereClause)
+
+            paymentRows = self.queryDatabase(paymentQuery, paymentParams)
+            if paymentRows:
+                paymentID = paymentRows[0]["paymentID"]
+
+            if not paymentID:
+                insertParams.append(
+                    (
+                        scholarID,
+                        trainerID,
+                    )
+                )
+
+        print(insertParams)
+        self.updateDatabaseMany(
+            """
+                INSERT INTO payments (
+                    scholarID,
+                    trainerID
+                ) VALUES (
+                    ?,
+                    ?
+                );
+            """,
+            insertParams
+        )
+
     def deletePayments(self, paramsDictIn):
 
         deleteParams = []
@@ -404,100 +636,29 @@ class DatabaseReader(object):
             deleteParams
         )
 
-    def getSecrets(self):
-        return self.queryDatabase(
-            """
-                SELECT
-                    secrets.secretID,
-                    scholars.scholarName,
-                    scholars.scholarAddress AS address,
-                    secrets.privateKey
-                FROM
-                    scholars LEFT OUTER JOIN secrets ON
-                        scholars.scholarAddress = secrets.address AND
-                        secrets.address IS NOT NULL
-                UNION
-                SELECT
-                    null AS secretID,
-                    scholars.scholarName,
-                    scholars.scholarAddress AS address,
-                    null AS privateKey
-                FROM
-                    scholars LEFT OUTER JOIN secrets ON
-                        scholars.scholarAddress = secrets.address AND
-                        secrets.address IS NULL
-                ORDER BY
-                    scholarName,
-                    secretID
-                ;
-            """
-        )
+    def updateSecretsFromFile(self, paramsDictIn):
 
-    def updateSecrets(self, paramsDictIn):
-
-        insertParams = []
         updateParams = []
 
-        for paramItem in paramsDictIn:
-            if not paramItem["secretID"]:
-                insertParams.append(
-                    (
-                        paramItem["address"],
-                        paramItem["privateKey"],
-                    )
+        for paramKey in paramsDictIn.keys():
+            paramValue = paramsDictIn[paramKey]
+            updateParams.append(
+                (
+                    paramValue,
+                    paramKey,
                 )
-            else:
-                updateParams.append(
-                    (
-                        paramItem["address"],
-                        paramItem["privateKey"],
-                        paramItem["secretID"],
-                    )
-                )
+            )
 
         self.updateDatabaseMany(
             """
-                INSERT INTO secrets (
-                    address,
-                    privateKey
-                ) VALUES (
-                    ?,
-                    ?
-                );
-            """,
-            insertParams
-        )
-        self.updateDatabaseMany(
-            """
-                UPDATE secrets
+                UPDATE scholars
                 SET
-                    address = ?,
-                    privateKey = ?
+                    scholarPrivateKey = ?
                 WHERE
-                    secretID = ?
+                    scholarAddress = ?
                 ;
             """,
             updateParams
-        )
-
-    def deleteSecrets(self, paramsDictIn):
-
-        deleteParams = []
-
-        for paramItem in paramsDictIn:
-            if paramItem["secretID"]:
-                deleteParams.append((paramItem["secretID"],))
-        
-        self.updateDatabaseMany(
-            """
-                DELETE
-                FROM
-                    secrets
-                WHERE
-                    secretID = ?
-                ;
-            """,
-            deleteParams
         )
 
     def updateTeamInfo(self, teamName="", managerAddress=""):

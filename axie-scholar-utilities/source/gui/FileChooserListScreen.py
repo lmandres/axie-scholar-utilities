@@ -21,11 +21,12 @@ class FileChooserListScreen(Screen):
         def chooseEntryCallback(instance, selection, touch):
             root = instance.parent.parent.parent
             if len(selection):
-                root.runUpdate(paymentsJSONFileIn=selection[0])
+                chooseFileCallback(selection[0])
                 root.closeDisplayedScreen()
 
         filters = kwargs.pop("filters", [])
         openButtonLabel = kwargs.pop("openButtonLabel", "Open")
+        chooseFileCallback = kwargs.pop("chooseFileCallback", lambda data: None)
         super(FileChooserListScreen, self).__init__()
         layoutRows = BoxLayout(orientation="vertical")
 
