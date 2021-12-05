@@ -192,6 +192,99 @@ class AppScreens(ScreenManager):
                 openButtonLabel="Open Axie Scholar Utilities Payments JSON",
                 chooseFileCallback=fileCallback
             )
+
+        elif nextScreenIn == "FileChooserListScreenPaymentsASUCSV":
+
+            def fileCallback(filePath):
+
+                try:
+
+                    scholars_list = []
+                    with open(filePath, "r", encoding='utf-8') as csvFileIn:
+                        reader = csv.DictReader(csvFileIn)
+                        for row in reader:
+                            clean_row = {k: v for k, v in row.items() if v is not None and v != ''}
+                            integer_row = {k: int(v) for k, v in clean_row.items() if v.isdigit()}
+                            clean_row.update(integer_row)
+                            scholars_list.append(clean_row)
+
+                    scholarsList = []
+                    trainersList = []
+                    paymentsList = []
+
+                    for scholarItem in scholars_list:
+                        if (
+                            "Name" in scholarItem.keys() and
+                            "AccountAddress" in scholarItem.keys() and
+                            "ScholarPayoutAddress" in scholarItem.keys()
+                        ):
+                            newDict = {
+                                "scholarName": scholarItem["Name"],
+                                "scholarAddress": scholarItem["AccountAddress"],
+                                "scholarPayoutAddress": scholarItem["ScholarPayoutAddress"]
+                            }
+                            newDict["scholarPayout"] = None
+                            if "ScholarPayout" in scholarItem.keys():
+                                newDict["scholarPayout"] = scholarItem["ScholarPayout"]
+                            newDict["scholarPercent"] = 30
+                            if "ScholarPercent" in scholarItem.keys():
+                                newDict["scholarPercent"] = scholarItem["ScholarPercent"]
+                            scholarsList.append(newDict)
+
+                        if "TrainerPayoutAddress" in scholarItem.keys():
+                            newDict = {
+                                "trainerName": "",
+                                "trainerPayoutAddress": scholarItem["TrainerPayoutAddress"]
+                            }
+                            newDict["trainerPayout"] = None
+                            if "TrainerPayout" in scholarItem.keys():
+                                newDict["trainerPayout"] = scholarItem["TrainerPayout"]
+                            newDict["trainerPercent"] = 1
+                            if "TrainerPercent" in scholarItem.keys():
+                                newDict["trainerPercent"] = scholarItem["TrainerPercent"]
+                            trainersList.append(newDict)
+
+                        if "AccountAddress" in scholarItem.keys():
+                            newDict = {
+                                "scholarAddress": scholarItem["AccountAddress"]
+                            }
+                            newDict["trainerPayoutAddress"] = None
+                            if "TrainerPayoutAddress" in scholarItem.keys():
+                                newDict["trainerPayoutAddress"] = scholarItem["TrainerPayoutAddress"]
+                            paymentsList.append(newDict)
+
+                    self.dbreader.updateScholarsFromFile(scholarsList)
+                    self.dbreader.updateTrainersFromFile(trainersList)
+                    self.dbreader.updatePaymentsFromFile(paymentsList)
+
+                except Exception as e:
+                    raise(e)
+
+            self.displayedScreen = FileChooserListScreen(
+                filters=["*.csv"],
+                openButtonLabel="Open Axie Scholar Utilities Payments CSV",
+                chooseFileCallback=fileCallback
+            )
+
+        elif nextScreenIn == "FileChooserListScreenSecretsASUCSV":
+
+            def fileCallback(filePath):
+                try:
+                    new_secrets = {}
+                    with open(filePath, "r", encoding='utf-8') as csv_file:
+                        csv_reader = csv.reader(csv_file, delimiter=',')
+                        for row in csv_reader:
+                            new_secrets[row[0]] = row[1]
+                    self.dbreader.updateSecretsFromFile(new_secrets)
+                except Exception as e:
+                    raise(e)
+
+            self.displayedScreen = FileChooserListScreen(
+                filters=["*.csv"],
+                openButtonLabel="Open Axie Scholar Utilities Payments JSON",
+                chooseFileCallback=fileCallback
+            )
+
         elif nextScreenIn == "FileChooserListScreenSecretsASUJSON":
 
             def fileCallback(filePath):
@@ -206,6 +299,7 @@ class AppScreens(ScreenManager):
                 openButtonLabel="Open Axie Scholar Utilities Payments JSON",
                 chooseFileCallback=fileCallback
             )
+
         elif nextScreenIn == "ManageScholarsScreen":
             self.displayedScreen = ManageTableScreen(
                 keyItems=[
@@ -261,27 +355,6 @@ class AppScreens(ScreenManager):
     def closeDisplayedScreen(self):
         self.remove_widget(self.displayedScreen)
         self.openMainMenuScreen()
-
-    def generatePaymentsFile(self, managerRoninID, csvFileStr, payments_file_path, encryptionKey):
-        scholars_list = []
-        cipher = Fernet(encryptionKey)
-        if not os.path.exists(payments_file_path):
-            with open(payments_file_path, 'wb') as f:
-                f.write(cipher.encrypt(b"{}"))
-
-        with io.StringIO(csvFileStr) as csvFileIO:
-            reader = csv.DictReader(csvFileIO)
-            for row in reader:
-                clean_row = {k: v for k, v in row.items() if v is not None and v != ''}
-                integer_row = {k: int(v) for k, v in clean_row.items() if v.isdigit()}
-                clean_row.update(integer_row)
-                scholars_list.append(clean_row)
-
-        payments_dict = {"Manager": managerRoninID, "Scholars": scholars_list}
-        with open(payments_file_path, 'wb') as f:
-            f.write(cipher.encrypt(json.dumps(payments_dict, ensure_ascii=False, indent=4).encode("utf-8")))
-
-        logging.info('New payments file saved')
             
   
 

@@ -20,9 +20,13 @@ class MainMenuScreen(Screen):
             elif instance.text == "Manage Trainer Roster":
                 root.openDisplayedScreen(nextScreenIn="ManageTrainersScreen")
             elif instance.text == "Import Payouts from Axie Scholar Utilities CSV":
-                print(instance.text)
+                root.openDisplayedScreen(nextScreenIn="FileChooserListScreenPaymentsASUCSV")
             elif instance.text == "Import Payouts from Axie Scholar Utilities JSON":
                 root.openDisplayedScreen(nextScreenIn="FileChooserListScreenPaymentsASUJSON")
+            elif instance.text == "Import Secrets from Axie Scholar Utilities CSV":
+                root.openDisplayedScreen(nextScreenIn="FileChooserListScreenSecretsASUCSV")
+            elif instance.text == "Import Secrets from Axie Scholar Utilities JSON":
+                root.openDisplayedScreen(nextScreenIn="FileChooserListScreenSecretsASUJSON")
             elif instance.text == "Manage Payouts":
                 root.openDisplayedScreen(nextScreenIn="EnterPaymentsScreen")
             elif instance.text == "Run Claims and Auto-Payouts":
@@ -65,7 +69,7 @@ class MainMenuScreen(Screen):
         self.layoutRow.add_widget(
             Button(
                 text="Import Payouts from Axie Scholar Utilities CSV",
-                disabled=True,
+                disabled=False,
                 on_press=buttonCallback
             )
         )
@@ -79,7 +83,7 @@ class MainMenuScreen(Screen):
         self.layoutRow.add_widget(
             Button(
                 text="Import Secrets from Axie Scholar Utilities CSV",
-                disabled=True,
+                disabled=False,
                 on_press=buttonCallback
             )
         )

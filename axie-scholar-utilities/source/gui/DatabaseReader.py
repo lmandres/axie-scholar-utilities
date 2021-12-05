@@ -602,7 +602,6 @@ class DatabaseReader(object):
                     )
                 )
 
-        print(insertParams)
         self.updateDatabaseMany(
             """
                 INSERT INTO payments (
