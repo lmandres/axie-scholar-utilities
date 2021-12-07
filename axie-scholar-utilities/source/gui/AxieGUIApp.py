@@ -1,6 +1,5 @@
 import configparser
 import csv
-import io
 
 from kivy.app import App
 from kivy.core.window import Window
@@ -315,14 +314,18 @@ class AppScreens(ScreenManager):
                     acc_name=rowData["scholarName"]
                 ).get_qr()
 
-                data = io.BytesIO()
                 qrImage = qrCode.get_image()
                 image = Image.new("1", (qrImage.size[0], qrImage.size[1]+60,), color=1)
                 image.paste(qrImage, (0, 0,))
                 imageDraw = ImageDraw.Draw(image)
                 imageFont = ImageFont.truetype("fonts\\RobotoMono-Regular.ttf", 24)
                 textSize = imageDraw.textsize(rowData["scholarName"], font=imageFont)
-                imageDraw.text((int((qrImage.size[0]-textSize[0])/2), qrImage.size[1],), rowData["scholarName"], font=imageFont, fill=0)
+                imageDraw.text(
+                    (int((qrImage.size[0]-textSize[0])/2), qrImage.size[1],),
+                    rowData["scholarName"],
+                    font=imageFont,
+                    fill=0
+                )
 
                 imageScreen = DisplayImageScreen(
                     image=image,

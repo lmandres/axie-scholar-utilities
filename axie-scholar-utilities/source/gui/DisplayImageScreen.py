@@ -1,5 +1,4 @@
 import io
-import logging
 
 import win32clipboard
 
