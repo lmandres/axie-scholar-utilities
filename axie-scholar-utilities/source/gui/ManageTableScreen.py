@@ -100,98 +100,124 @@ class ManageTableScreen(Screen):
             csvItems = []
 
             for keyItem in keyItemsIn:
-
-                csvText = ""
-                try:
-                    if rowItem[keyItem[0]]:
-                        csvText = str(rowItem[keyItem[0]])
-                except KeyError:
-                    pass
-
-                if keyItem[1] in [
-                    "deletebutton",
-                    "button"
-                ]:
-
-                    buttonText = "Delete"
-                    callback = self.deleteCallback
-                    if keyItem[1] == "button":
-
-                        def callbackFunc(instance):
-                            buttonFunc(
-                                instance.parent.parent.parent.parent.parent,
-                                rowItem
-                            )
-
-                        buttonText = keyItem[2]
-                        callback = callbackFunc
-                        buttonFunc = keyItem[3]
-
-                    csvItem = Button(
-                        text=buttonText,
-                        on_press=callback
-                    )
-                    csvItem.columnID = rowItem[self.rowIDColumn]
-                    csvItem.field = None
-                    csvItem.rowIndex = len(self.csvItemRows)
-
-                elif keyItem[1] in [
-                    "textinput",
-                    "addressinput",
-                    "privatekeyinput",
-                    "passwordinput"
-                ]:
-
-                    csvItem = TextInput(
-                        multiline=False,
-                        text=csvText
-                    )
-                    csvItem.columnID = rowItem[self.rowIDColumn]
-                    csvItem.field = keyItem[0]
-                    csvItem.rowIndex = len(self.csvItemRows)
-
-                    if keyItem[1] == "addressinput":
-                        csvItem.bind(on_text_validate=self.onAddressEnter)
-                        csvItem.bind(text=self.onAddressText)
-
-                    if keyItem[1] == "passwordinput":
-                        csvItem.password = True
-
-                elif keyItem[1] == "dropdownbutton":
-
-                    csvItemText = ""
-                    for keySelectItem in keyItem[2]:
-                        if keySelectItem[0] == rowItem[keyItem[0]]:
-                            csvItemText = keySelectItem[1]
-
-                    csvItem = DropDownButton(text=csvItemText)
-                    csvItem.itemID = rowItem[keyItem[0]]
-                    csvItem.columnID = rowItem[self.rowIDColumn]
-                    csvItem.field = keyItem[0]
-                    csvItem.rowIndex = len(self.csvItemRows)
-
-                    for dropDownItem in keyItem[2]:
-                        dropDownButton = Button(
-                            text=dropDownItem[1],
-                            size_hint=(1, None),
-                            height=30
-                        )
-                        dropDownButton.itemID = dropDownItem[0]
-                        dropDownButton.bind(on_press=csvItem.dropDownButtonCallback)
-                        csvItem.add_widget(dropDownButton)
-
-                elif keyItem[1] in [
-                    "label",
-                    "addresslabel"
-                ]:
-                    csvItem = Label(text=csvText)
-                    csvItem.columnID = rowItem[self.rowIDColumn]
-                    csvItem.field = keyItem[0]
-                    csvItem.rowIndex = len(self.csvItemRows)
-
+                csvItem = self.buildCSVItem(
+                    keyItem,
+                    rowItem[self.rowIDColumn],
+                    len(self.csvItemRows),
+                    rowItem
+                )
                 csvItems.append(csvItem)
 
             self.csvItemRows.append(csvItems)
+
+    def buildCSVItem(self, keyItem, columnID, rowIndex, rowItem):
+
+        csvItem = None
+        csvText = ""
+        try:
+            if rowItem[keyItem[0]]:
+                csvText = str(rowItem[keyItem[0]])
+        except KeyError:
+            pass
+
+        if keyItem[1] in [
+            "deletebutton",
+            "button"
+        ]:
+
+            buttonText = "Delete"
+            callback = self.deleteCallback
+
+            if keyItem[1] == "button":
+
+                def callbackFunc(instance):
+                    buttonFunc(
+                        instance.parent.parent.parent.parent.parent,
+                        rowItem
+                    )
+
+                buttonText = keyItem[2]
+                callback = callbackFunc
+                buttonFunc = keyItem[3]
+
+            csvItem = Button(
+                text=buttonText,
+                on_press=callback
+            )
+            csvItem.columnID = columnID
+            csvItem.field = None
+            csvItem.rowIndex = rowIndex
+            if keyItem[1] == "button":
+                csvItem.text = keyItem[2]
+                if columnID is None:
+                    csvItem.disabled = True
+
+        elif keyItem[1] in [
+            "textinput",
+            "addressinput",
+            "privatekeyinput",
+            "passwordinput"
+        ]:
+
+            csvItem = TextInput(
+                multiline=False,
+                text=csvText
+            )
+
+            if keyItem[1] == "addressinput":
+                csvItem.bind(on_text_validate=self.onAddressEnter)
+                csvItem.bind(text=self.onAddressText)
+
+            csvItem.columnID = columnID
+            csvItem.field = keyItem[0]
+            csvItem.rowIndex = rowIndex
+
+            if keyItem[1] == "addressinput":
+                csvItem.bind(on_text_validate=self.onAddressEnter)
+                csvItem.bind(text=self.onAddressText)
+
+            if keyItem[1] == "passwordinput":
+                csvItem.password = True
+
+        elif keyItem[1] == "dropdownbutton":
+
+            csvItemText = ""
+            for keySelectItem in keyItem[2]:
+                if keySelectItem[0] == rowItem[keyItem[0]]:
+                    csvItemText = keySelectItem[1]
+
+            csvItem = DropDownButton(text=csvItemText)
+
+            try:
+                csvItem.itemID = rowItem[keyItem[0]]
+            except KeyError:
+                csvItem.itemID = None
+
+            csvItem.columnID = columnID
+            csvItem.field = keyItem[0]
+            csvItem.rowIndex = rowIndex
+
+            for dropDownItem in keyItem[2]:
+                dropDownButton = Button(
+                    text=dropDownItem[1],
+                    size_hint=(1, None),
+                    height=30
+                )
+                dropDownButton.itemID = dropDownItem[0]
+                dropDownButton.bind(on_press=csvItem.dropDownButtonCallback)
+                csvItem.add_widget(dropDownButton)
+
+        elif keyItem[1] in [
+            "label",
+            "addresslabel"
+        ]:
+
+            csvItem = Label(text=csvText)
+            csvItem.columnID = columnID
+            csvItem.field = keyItem[0]
+            csvItem.rowIndex = rowIndex
+
+        return csvItem
 
     def onAddressEnter(self, instance):
 
@@ -227,68 +253,7 @@ class ManageTableScreen(Screen):
             csvItems = []
 
             for keyItem in self.keyItems:
-
-                csvItem = None
-
-                if keyItem[1] == "deletebutton":
-
-                    csvItem = Button(
-                        text="Delete",
-                        on_press=self.deleteCallback
-                    )
-                    csvItem.columnID = None
-                    csvItem.field = None
-                    csvItem.rowIndex = len(self.csvItemRows)
-
-                elif keyItem[1] in [
-                    "textinput",
-                    "addressinput",
-                    "privatekeyinput"
-                ]:
-
-                    csvItem = TextInput()
-
-                    if keyItem[1] == "addressinput":
-                        csvItem.bind(on_text_validate=self.onAddressEnter)
-                        csvItem.bind(text=self.onAddressText)
-
-                    csvItem.columnID = None
-                    csvItem.field = keyItem[0]
-                    csvItem.rowIndex = len(self.csvItemRows)
-
-                elif keyItem[1] == "dropdownbutton":
-
-                    csvItemText = ""
-                    for keySelectItem in keyItem[2]:
-                        if keySelectItem[0] is None:
-                            csvItemText = keySelectItem[1]
-
-                    csvItem = DropDownButton(text=csvItemText)
-                    csvItem.itemID = None
-                    csvItem.columnID = None
-                    csvItem.field = keyItem[0]
-                    csvItem.rowIndex = len(self.csvItemRows)
-
-                    for dropDownItem in keyItem[2]:
-                        dropDownButton = Button(
-                            text=dropDownItem[1],
-                            size_hint=(1, None),
-                            height=30
-                        )
-                        dropDownButton.itemID = dropDownItem[0]
-                        dropDownButton.bind(on_press=csvItem.dropDownButtonCallback)
-                        csvItem.add_widget(dropDownButton)
-
-                elif keyItem[1] in [
-                    "label",
-                    "addresslabel"
-                ]:
-
-                    csvItem = Label()
-                    csvItem.columnID = None
-                    csvItem.field = keyItem[0]
-                    csvItem.rowIndex = len(self.csvItemRows)
-
+                csvItem = self.buildCSVItem(keyItem, None, len(self.csvItemRows), {})
                 csvItems.append(csvItem)
                 self.layoutGrid.add_widget(csvItem)
 

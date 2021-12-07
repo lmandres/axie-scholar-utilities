@@ -158,6 +158,7 @@ class DatabaseReader(object):
                         paramItem["scholarPayoutAddress"],
                         paramItem["scholarPercent"],
                         paramItem["scholarPayout"],
+                        paramItem["scholarPrivateKey"]
                     )
                 )
             else:
@@ -168,6 +169,7 @@ class DatabaseReader(object):
                         paramItem["scholarPayoutAddress"],
                         paramItem["scholarPercent"],
                         paramItem["scholarPayout"],
+                        paramItem["scholarPrivateKey"],
                         paramItem["scholarID"],
                     )
                 )
@@ -179,8 +181,10 @@ class DatabaseReader(object):
                     scholarAddress,
                     scholarPayoutAddress,
                     scholarPercent,
-                    scholarPayout
+                    scholarPayout,
+                    scholarPrivateKey
                 ) VALUES (
+                    ?,
                     ?,
                     ?,
                     ?,
@@ -198,7 +202,8 @@ class DatabaseReader(object):
                     scholarAddress = ?,
                     scholarPayoutAddress = ?,
                     scholarPercent = ?,
-                    scholarPayout = ?
+                    scholarPayout = ?,
+                    scholarPrivateKey = ?
                 WHERE
                     scholarID = ?
                 ;
