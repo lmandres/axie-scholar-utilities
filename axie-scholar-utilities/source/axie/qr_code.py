@@ -10,17 +10,20 @@ from axie.utils import AxieGraphQL, load_json
 
 class QRCode(AxieGraphQL):
 
-    def __init__(self, acc_name, path, **kwargs):
-        self.acc_name = acc_name
-        self.path = os.path.join(path, f'{self.acc_name.lower()}-{int(datetime.timestamp(datetime.now()))}.png')
+    def __init__(self, **kwargs):
+        self.acc_name = kwargs.pop("acc_name", None)
+        self.path = os.path.join(kwargs.pop("path", ""), f'{self.acc_name.lower()}-{int(datetime.timestamp(datetime.now()))}.png')
         super().__init__(**kwargs)
 
-    def generate_qr(self):
+    def get_qr(self):
         jwt = self.get_jwt()
         logging.info('Create QR Code')
         qr = qrcode.make(jwt)
         logging.info(f'Saving QR Code for account {self.acc_name} at {self.path}')
-        qr.save(self.path)
+        return qr
+
+    def generate_qr(self):
+        self.get_qr().save(self.path)
 
 
 class QRCodeManager:

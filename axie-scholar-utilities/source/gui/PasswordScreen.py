@@ -8,12 +8,12 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.uix.screenmanager import Screen
 from kivy.uix.textinput import TextInput
-        
+
 
 class PasswordScreen(Screen):
 
     errorLabel = ""
-    layoutRow = None  
+    layoutRow = None
     password = None
     passwordSalt = None
 
@@ -72,7 +72,7 @@ class PasswordScreen(Screen):
             algorithm=hashes.SHA256(),
             length=32,
             salt=self.passwordSalt,
-            #salt = os.urandom(16),
+            # salt=os.urandom(16),
             iterations=390000
         )
         key = base64.urlsafe_b64encode(kdf.derive(password))

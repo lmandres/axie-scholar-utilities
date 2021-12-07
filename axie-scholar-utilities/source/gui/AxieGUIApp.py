@@ -1,27 +1,26 @@
 import configparser
 import csv
-import logging
 import io
-import json
-import os
 
 from kivy.app import App
 from kivy.core.window import Window
 from kivy.uix.screenmanager import ScreenManager
 
-os.makedirs('logs', exist_ok=True)
 from gui import __version__
 from gui.DatabaseReader import DatabaseReader
-from gui.EnterPaymentsScreen import EnterPaymentsScreen
-from gui.EnterSecretsScreen import EnterSecretsScreen
+from gui.DisplayImageScreen import DisplayImageScreen
+from gui.DisplayLoggingScreen import DisplayLoggingScreen
 from gui.FileChooserListScreen import FileChooserListScreen
 from gui.MainMenuScreen import MainMenuScreen
 from gui.ManagerRoninScreen import ManagerRoninScreen
 from gui.ManageTableScreen import ManageTableScreen
 from gui.PasswordScreen import PasswordScreen
 
-from axie import AxieClaimsManager
-from axie import AxiePaymentsManager
+from PIL import Image
+from PIL import ImageDraw
+from PIL import ImageFont
+
+from axie.qr_code import QRCode
 from axie.utils import load_json
 
 
@@ -45,9 +44,9 @@ class AppScreens(ScreenManager):
         Window.maximize()
         self.openMainMenuScreen()
 
-        #if not os.path.exists(self.config["DEFAULT"]["SECRETS_FILE"]):
+        # if not os.path.exists(self.config["DEFAULT"]["SECRETS_FILE"]):
         #    self.openNewPasswordScreen()
-        #else:
+        # else:
         #    self.openUnlockScreen()
 
     def openNewPasswordScreen(self, errorText=""):
@@ -88,16 +87,18 @@ class AppScreens(ScreenManager):
         else:
             self.runUpdate()
             self.closeUnlockScreen()
-        
+
     def openUnlockScreen(self):
 
         def onTextEnter(root):
-            try:
-                root.parent.encryptionKey = root.getEncryptionKey(root.password.text)
-                root.parent.runUpdate()
-                root.parent.closeUnlockScreen()
-            except InvalidToken:
-                root.errorLabel.text = "Invalid password."
+            pass
+
+            # try:
+            #    root.parent.encryptionKey = root.getEncryptionKey(root.password.text)
+            #    root.parent.runUpdate()
+            #    root.parent.closeUnlockScreen()
+            # except InvalidToken:
+            #    root.errorLabel.text = "Invalid password."
 
         self.unlockScreen = PasswordScreen(
             label="Password",
@@ -119,10 +120,10 @@ class AppScreens(ScreenManager):
     def openDisplayedScreen(self, nextScreenIn=None):
         if nextScreenIn == "ManagerRoninScreen":
             teamName = self.dbreader.getSetting("Team Name")
-            if teamName == None:
+            if teamName is None:
                 teamName = ""
             managerAddress = self.dbreader.getSetting("Manager Address")
-            if managerAddress == None:
+            if managerAddress is None:
                 managerAddress = ""
             self.displayedScreen = ManagerRoninScreen(
                 teamName=teamName,
@@ -301,6 +302,35 @@ class AppScreens(ScreenManager):
             )
 
         elif nextScreenIn == "ManageScholarsScreen":
+
+            def generateQRCode(root, rowData):
+
+                def closeScreen(screenRoot):
+                    root.remove_widget(imageScreen)
+                    root.add_widget(self.displayedScreen)
+
+                qrCode = QRCode(
+                    account=rowData["scholarAddress"],
+                    private_key=rowData["scholarPrivateKey"],
+                    acc_name=rowData["scholarName"]
+                ).get_qr()
+
+                data = io.BytesIO()
+                qrImage = qrCode.get_image()
+                image = Image.new("1", (qrImage.size[0], qrImage.size[1]+60,), color=1)
+                image.paste(qrImage, (0, 0,))
+                imageDraw = ImageDraw.Draw(image)
+                imageFont = ImageFont.truetype("fonts\\RobotoMono-Regular.ttf", 24)
+                textSize = imageDraw.textsize(rowData["scholarName"], font=imageFont)
+                imageDraw.text((int((qrImage.size[0]-textSize[0])/2), qrImage.size[1],), rowData["scholarName"], font=imageFont, fill=0)
+
+                imageScreen = DisplayImageScreen(
+                    image=image,
+                    closeCallback=closeScreen
+                )
+                self.remove_widget(self.displayedScreen)
+                root.add_widget(imageScreen)
+
             self.displayedScreen = ManageTableScreen(
                 keyItems=[
                     ("scholarName", "textinput",),
@@ -309,6 +339,7 @@ class AppScreens(ScreenManager):
                     ("scholarPercent", "textinput",),
                     ("scholarPayout", "textinput",),
                     ("scholarPrivateKey", "passwordinput",),
+                    ("", "button", "Generate QR Code", generateQRCode,),
                     ("", "deletebutton",)
                 ],
                 rowIDColumn="scholarID",
@@ -350,15 +381,20 @@ class AppScreens(ScreenManager):
                 updateCallback=self.dbreader.updatePayments,
                 deleteCallback=self.dbreader.deletePayments
             )
+
+        elif nextScreenIn == "RunClaimsAndAutoPayouts":
+            self.displayedScreen = DisplayLoggingScreen()
+
         self.add_widget(self.displayedScreen)
 
     def closeDisplayedScreen(self):
         self.remove_widget(self.displayedScreen)
         self.openMainMenuScreen()
-            
-  
+
 
 class AxieGUIApp(App):
+
     title = "Axie Scholar Payments GUI v{}".format(__version__)
+
     def build(self):
         return AppScreens()

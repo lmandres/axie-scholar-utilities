@@ -13,5 +13,5 @@ class LabelLoggingHandler(logging.Handler):
     def emit(self, record):
         "using the Clock module for thread safety with kivy's main loop"
         def f(dt=None):
-            self.label.text += "{}\n".format(self.format(record)) #"use += to append..."
+            self.label.text += "{}\n".format(self.format(record))  # "use += to append..."
         Clock.schedule_once(f, -1)

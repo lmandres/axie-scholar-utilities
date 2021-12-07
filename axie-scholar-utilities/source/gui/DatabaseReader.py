@@ -291,7 +291,7 @@ class DatabaseReader(object):
         for paramItem in paramsDictIn:
             if paramItem["scholarID"]:
                 deleteParams.append((paramItem["scholarID"],))
-        
+
         self.updateDatabaseMany(
             """
                 DELETE
@@ -458,7 +458,7 @@ class DatabaseReader(object):
         for paramItem in paramsDictIn:
             if paramItem["trainerID"]:
                 deleteParams.append((paramItem["trainerID"],))
-        
+
         self.updateDatabaseMany(
             """
                 DELETE
@@ -622,7 +622,7 @@ class DatabaseReader(object):
         for paramItem in paramsDictIn:
             if paramItem["paymentID"]:
                 deleteParams.append((paramItem["paymentID"],))
-        
+
         self.updateDatabaseMany(
             """
                 DELETE

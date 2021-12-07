@@ -2,7 +2,7 @@ from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.screenmanager import Screen
-        
+
 
 class MainMenuScreen(Screen):
 
@@ -30,7 +30,7 @@ class MainMenuScreen(Screen):
             elif instance.text == "Manage Payouts":
                 root.openDisplayedScreen(nextScreenIn="EnterPaymentsScreen")
             elif instance.text == "Run Claims and Auto-Payouts":
-                print(instance.text)
+                root.openDisplayedScreen(nextScreenIn="RunClaimsAndAutoPayouts")
             elif instance.text == "Import Secrets from Axie Scholar Utilities JSON":
                 root.openDisplayedScreen(nextScreenIn="FileChooserListScreenSecretsASUJSON")
             elif instance.text == "Exit":
@@ -97,7 +97,7 @@ class MainMenuScreen(Screen):
         self.layoutRow.add_widget(
             Button(
                 text="Run Claims and Auto-Payouts",
-                disabled=True,
+                disabled=False,
                 on_press=buttonCallback
             )
         )

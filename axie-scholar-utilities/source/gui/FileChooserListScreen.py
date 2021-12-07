@@ -25,7 +25,6 @@ class FileChooserListScreen(Screen):
                 root.closeDisplayedScreen()
 
         filters = kwargs.pop("filters", [])
-        openButtonLabel = kwargs.pop("openButtonLabel", "Open")
         chooseFileCallback = kwargs.pop("chooseFileCallback", lambda data: None)
         super(FileChooserListScreen, self).__init__()
         layoutRows = BoxLayout(orientation="vertical")

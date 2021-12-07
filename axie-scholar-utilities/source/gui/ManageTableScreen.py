@@ -1,7 +1,6 @@
 from kivy.core.window import Window
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
-from kivy.uix.dropdown import DropDown
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
 from kivy.uix.screenmanager import Screen
@@ -27,11 +26,11 @@ class ManageTableScreen(Screen):
     addressColumns = []
     rowIDColumn = ""
     rowData = []
-    updateTableCallback = lambda data: None
-    deleteTableCallback = lambda data: None
+    updateTableCallback = None
+    deleteTableCallback = None
 
     def __init__(self, **kwargs):
-        
+
         def resizeScreen(instance, width, height):
             self.scrollview.size = (width, height)
 
@@ -109,10 +108,28 @@ class ManageTableScreen(Screen):
                 except KeyError:
                     pass
 
-                if keyItem[1] == "deletebutton":
+                if keyItem[1] in [
+                    "deletebutton",
+                    "button"
+                ]:
+
+                    buttonText = "Delete"
+                    callback = self.deleteCallback
+                    if keyItem[1] == "button":
+
+                        def callbackFunc(instance):
+                            buttonFunc(
+                                instance.parent.parent.parent.parent.parent,
+                                rowItem
+                            )
+
+                        buttonText = keyItem[2]
+                        callback = callbackFunc
+                        buttonFunc = keyItem[3]
+
                     csvItem = Button(
-                        text="Delete",
-                        on_press=self.deleteCallback
+                        text=buttonText,
+                        on_press=callback
                     )
                     csvItem.columnID = rowItem[self.rowIDColumn]
                     csvItem.field = None
@@ -194,7 +211,6 @@ class ManageTableScreen(Screen):
             self.saveAndExitButton.disabled = True
 
     def deleteCallback(self, instance):
-        root = instance.parent.parent.parent.parent.parent.parent
 
         self.deleteItemRows.append(self.csvItemRows.pop(instance.rowIndex))
         self.layoutGrid.clear_widgets()
@@ -213,7 +229,6 @@ class ManageTableScreen(Screen):
             for keyItem in self.keyItems:
 
                 csvItem = None
-                csvGridItem = None
 
                 if keyItem[1] == "deletebutton":
 
@@ -245,7 +260,7 @@ class ManageTableScreen(Screen):
 
                     csvItemText = ""
                     for keySelectItem in keyItem[2]:
-                        if keySelectItem[0] == None:
+                        if keySelectItem[0] is None:
                             csvItemText = keySelectItem[1]
 
                     csvItem = DropDownButton(text=csvItemText)
@@ -270,7 +285,7 @@ class ManageTableScreen(Screen):
                 ]:
 
                     csvItem = Label()
-                    csvItem.columnID = rowItem[self.rowIDColumn]
+                    csvItem.columnID = None
                     csvItem.field = keyItem[0]
                     csvItem.rowIndex = len(self.csvItemRows)
 
@@ -312,7 +327,7 @@ class ManageTableScreen(Screen):
                     queryParams.append(newDict)
                 else:
                     self.deleteItemRows.append(rowItem)
-                                
+
             self.updateTableCallback(queryParams)
 
             for rowItem in self.deleteItemRows:

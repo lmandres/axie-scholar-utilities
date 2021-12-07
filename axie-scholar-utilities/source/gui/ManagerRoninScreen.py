@@ -74,6 +74,6 @@ class ManagerRoninScreen(Screen):
                 teamName=self.teamName.text,
                 managerAddress=self.roninID.text
             )
-        else: 
+        else:
             self.errorLabel.text = f'Ronin provided ({self.roninID.text}) looks wrong, try again.'
             self.roninID.text = ""

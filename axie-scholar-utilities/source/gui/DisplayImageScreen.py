@@ -1,26 +1,25 @@
+import io
 import logging
+
+import win32clipboard
+
+from kivy.uix.image import CoreImage
 
 from kivy.core.window import Window
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
-from kivy.uix.label import Label
+from kivy.uix.image import Image
 from kivy.uix.screenmanager import Screen
 from kivy.uix.scrollview import ScrollView
 
-from gui.LabelLoggingHandler import LabelLoggingHandler
 
+class DisplayImageScreen(Screen):
 
-class DisplayLoggingScreen(Screen):
-
-    loggingLabel = None
     closeButton = None
-    runButton = None
+    copyButton = None
     scrollview = None
 
     def __init__(self, **kwargs):
-
-        def runCallbackWrapper(instance):
-            runCallback(instance.parent.parent)
 
         def closeCallbackWrapper(instance):
             closeCallback(instance.parent.parent)
@@ -31,43 +30,56 @@ class DisplayLoggingScreen(Screen):
 
         def resizeScreen(instance, width, height):
             self.scrollview.size = (width, height)
-            self.runButton.size = (width, 30)
+            self.copyButton.size = (width, 30)
             self.closeButton.size = (width, 30)
 
-        runCallback = kwargs.pop("runCallback", lambda instance: None)
+        def sendToClipboard(instance):
+
+            output = io.BytesIO()
+            image.convert('RGB').save(output, 'BMP')
+            data = output.getvalue()[14:]
+            output.close()
+
+            win32clipboard.OpenClipboard()
+            win32clipboard.EmptyClipboard()
+            win32clipboard.SetClipboardData(win32clipboard.CF_DIB, data)
+            win32clipboard.CloseClipboard()
+
+        image = kwargs.pop("image", None)
         closeCallback = kwargs.pop("closeCallback", lambda instance: None)
-        super(DisplayLoggingScreen, self).__init__(**kwargs)
+        super(DisplayImageScreen, self).__init__(**kwargs)
 
         layout = BoxLayout(orientation="vertical")
 
-        self.loggingLabel = Label(
-            size_hint=(None, None)
-        )
-        self.loggingLabel.bind(texture_size=setSize)
-        log = logging.getLogger()
-        log.level = logging.INFO
-        log.addHandler(LabelLoggingHandler(self.loggingLabel, logging.INFO))
+        data = io.BytesIO()
+        image.save(data, format="png")
+        data.seek(0)
+
+        imageWidget = Image()
+        imageWidget.texture = CoreImage(io.BytesIO(data.read()), ext="png").texture
 
         self.scrollview = ScrollView(bar_width=20)
         self.scrollview.size_hint = (None, None)
         self.scrollview.pos_hint = {"center_x": 0.5, "center_y": 0.5}
         self.scrollview.size = (Window.width, Window.height-60)
         self.scrollview.scroll_type = ["bars"]
-        self.scrollview.add_widget(self.loggingLabel)
+        self.scrollview.add_widget(imageWidget)
 
         Window.bind(on_resize=resizeScreen)
         layout.add_widget(self.scrollview)
 
-        self.runButton = Button(
-            text="Run Claim",
-            on_press=runCallbackWrapper,
+        self.copyButton = Button(
+            text="Copy to Clipboard",
+            disabled=False,
+            on_press=sendToClipboard,
             size_hint=(None, None),
             size=(Window.width, 30)
         )
-        layout.add_widget(self.runButton)
+        layout.add_widget(self.copyButton)
+
         self.closeButton = Button(
             text="Close",
-            disabled=True,
+            disabled=False,
             on_press=closeCallbackWrapper,
             size_hint=(None, None),
             size=(Window.width, 30)
