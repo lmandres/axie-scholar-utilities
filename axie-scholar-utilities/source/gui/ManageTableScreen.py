@@ -181,10 +181,13 @@ class ManageTableScreen(Screen):
 
         elif keyItem[1] == "dropdownbutton":
 
-            csvItemText = ""
+            csvItemText = "--"
             for keySelectItem in keyItem[2]:
-                if keySelectItem[0] == rowItem[keyItem[0]]:
-                    csvItemText = keySelectItem[1]
+                try:
+                    if keySelectItem[0] == rowItem[keyItem[0]]:
+                        csvItemText = keySelectItem[1]
+                except KeyError:
+                    pass
 
             csvItem = DropDownButton(text=csvItemText)
 
