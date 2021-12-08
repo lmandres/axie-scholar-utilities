@@ -308,28 +308,65 @@ class AppScreens(ScreenManager):
                     root.remove_widget(imageScreen)
                     root.add_widget(self.displayedScreen)
 
-                qrCode = QRCode(
-                    account=rowData["scholarAddress"],
-                    private_key=rowData["scholarPrivateKey"],
-                    acc_name=rowData["scholarName"]
-                ).get_qr()
+                qrCode = None
+                if (
+                    "scholarAddress" in rowData.keys() and
+                    "scholarPrivateKey" in rowData.keys() and
+                    "scholarName" in rowData.keys() and
+                    rowData["scholarAddress"] and
+                    rowData["scholarPrivateKey"]  and
+                    rowData["scholarName"]
+                ):
+                    qrCode = QRCode(
+                        account=rowData["scholarAddress"],
+                        private_key=rowData["scholarPrivateKey"],
+                        acc_name=rowData["scholarName"]
+                    ).get_qr()
 
-                qrImage = qrCode.get_image()
-                image = Image.new("1", (qrImage.size[0], qrImage.size[1]+60,), color=1)
-                image.paste(qrImage, (0, 0,))
+                image = None
+                qrImage = None
+                if not qrCode:
+                    image = Image.new("1", (770, 830,), color=1)
+                else:
+                    qrImage = qrCode.get_image()
+                    image = Image.new("1", (qrImage.size[0], qrImage.size[1]+60,), color=1)
+                    image.paste(qrImage, (0, 0,))
+
                 imageDraw = ImageDraw.Draw(image)
                 imageFont = ImageFont.truetype("fonts\\RobotoMono-Regular.ttf", 24)
-                textSize = imageDraw.textsize(rowData["scholarName"], font=imageFont)
-                imageDraw.text(
-                    (int((qrImage.size[0]-textSize[0])/2), qrImage.size[1],),
-                    rowData["scholarName"],
-                    font=imageFont,
-                    fill=0
-                )
+                qrCodeValid = False
+
+                if not qrImage:
+                    textStr = (
+                        "Invalid data was passed to QR Code.\n" +
+                        "Please ensure that scholarName, scholarAddress,\n" +
+                        "and scholarPrivateKey are filled in\n" +
+                        "and are valid."
+                    )
+                    textSize = imageDraw.multiline_textsize(
+                        textStr,
+                        font=imageFont
+                    )
+                    imageDraw.multiline_text(
+                        (int((770-textSize[0])/2), int((830-textSize[1])/2),),
+                        textStr,
+                        font=imageFont,
+                        fill=0
+                    )
+                else:
+                    textSize = imageDraw.textsize(rowData["scholarName"], font=imageFont)
+                    imageDraw.text(
+                        (int((qrImage.size[0]-textSize[0])/2), qrImage.size[1],),
+                        rowData["scholarName"],
+                        font=imageFont,
+                        fill=0
+                    )
+                    qrCodeValid = True
 
                 imageScreen = DisplayImageScreen(
                     image=image,
-                    closeCallback=closeScreen
+                    closeCallback=closeScreen,
+                    qrCodeValid=qrCodeValid
                 )
                 self.remove_widget(self.displayedScreen)
                 root.add_widget(imageScreen)

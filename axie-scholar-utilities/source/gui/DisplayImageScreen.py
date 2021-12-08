@@ -46,6 +46,7 @@ class DisplayImageScreen(Screen):
 
         image = kwargs.pop("image", None)
         closeCallback = kwargs.pop("closeCallback", lambda instance: None)
+        qrCodeValid = kwargs.pop("qrCodeValid", False)
         super(DisplayImageScreen, self).__init__(**kwargs)
 
         layout = BoxLayout(orientation="vertical")
@@ -69,7 +70,7 @@ class DisplayImageScreen(Screen):
 
         self.copyButton = Button(
             text="Copy to Clipboard",
-            disabled=False,
+            disabled=(not qrCodeValid),
             on_press=sendToClipboard,
             size_hint=(None, None),
             size=(Window.width, 30)

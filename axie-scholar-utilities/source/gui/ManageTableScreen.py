@@ -244,6 +244,8 @@ class ManageTableScreen(Screen):
         self.deleteItemRows.append(self.csvItemRows.pop(instance.rowIndex))
         self.layoutGrid.clear_widgets()
 
+        for keyItem in self.keyItems:
+            self.layoutGrid.add_widget(Label(text=keyItem[0]))
         for rowIndex in range(0, len(self.csvItemRows), 1):
             for csvItem in self.csvItemRows[rowIndex]:
                 csvItem.rowIndex = rowIndex
