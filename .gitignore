@@ -132,6 +132,8 @@ dmypy.json
 .pyre/
 
 # Sensitive files
+venv_test_win/
+config.ini
 payments.dat
 payments.json
 secrets.dat

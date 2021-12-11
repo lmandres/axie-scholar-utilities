@@ -21,6 +21,7 @@ class DatabaseReader(object):
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS scholars (
                     scholarID INTEGER PRIMARY KEY AUTOINCREMENT,
+                    discordName TEXT,
                     scholarName TEXT NOT NULL,
                     scholarAddress TEXT NOT NULL,
                     scholarPayoutAddress TEXT NOT NULL,
@@ -124,11 +125,35 @@ class DatabaseReader(object):
             conn.executemany(queryIn, queryParamsIn)
             conn.commit()
 
+    def getScholarByDiscordName(self, discordName):
+        return self.queryDatabase(
+            """
+                SELECT
+                    scholarID,
+                    scholarName,
+                    scholarAddress,
+                    scholarPayoutAddress,
+                    scholarPercent,
+                    scholarPayout,
+                    scholarPrivateKey
+                FROM
+                    scholars
+                WHERE
+                    discordName = ?
+                ORDER BY
+                    scholarID,
+                    scholarName
+                ;
+            """,
+            (discordName,)
+        )
+
     def getScholars(self):
         return self.queryDatabase(
             """
                 SELECT
                     scholarID,
+                    discordName,
                     scholarName,
                     scholarAddress,
                     scholarPayoutAddress,
@@ -153,6 +178,7 @@ class DatabaseReader(object):
             if not paramItem["scholarID"]:
                 insertParams.append(
                     (
+                        paramItem["discordName"],
                         paramItem["scholarName"],
                         paramItem["scholarAddress"],
                         paramItem["scholarPayoutAddress"],
@@ -164,6 +190,7 @@ class DatabaseReader(object):
             else:
                 updateParams.append(
                     (
+                        paramItem["discordName"],
                         paramItem["scholarName"],
                         paramItem["scholarAddress"],
                         paramItem["scholarPayoutAddress"],
@@ -177,6 +204,7 @@ class DatabaseReader(object):
         self.updateDatabaseMany(
             """
                 INSERT INTO scholars (
+                    discordName,
                     scholarName,
                     scholarAddress,
                     scholarPayoutAddress,
@@ -184,6 +212,7 @@ class DatabaseReader(object):
                     scholarPayout,
                     scholarPrivateKey
                 ) VALUES (
+                    ?,
                     ?,
                     ?,
                     ?,
@@ -198,6 +227,7 @@ class DatabaseReader(object):
             """
                 UPDATE scholars
                 SET
+                    discordName = ?,
                     scholarName = ?,
                     scholarAddress = ?,
                     scholarPayoutAddress = ?,

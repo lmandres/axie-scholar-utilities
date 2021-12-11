@@ -6,7 +6,6 @@ from kivy.core.window import Window
 from kivy.uix.screenmanager import ScreenManager
 
 from gui import __version__
-from gui.DatabaseReader import DatabaseReader
 from gui.DisplayImageScreen import DisplayImageScreen
 from gui.DisplayLoggingScreen import DisplayLoggingScreen
 from gui.FileChooserListScreen import FileChooserListScreen
@@ -15,10 +14,8 @@ from gui.ManagerRoninScreen import ManagerRoninScreen
 from gui.ManageTableScreen import ManageTableScreen
 from gui.PasswordScreen import PasswordScreen
 
-from PIL import Image
-from PIL import ImageDraw
-from PIL import ImageFont
-
+from axie.qr_code import createQRImage
+from axie.DatabaseReader import DatabaseReader
 from axie.qr_code import QRCode
 from axie.utils import load_json
 
@@ -308,60 +305,7 @@ class AppScreens(ScreenManager):
                     root.remove_widget(imageScreen)
                     root.add_widget(self.displayedScreen)
 
-                qrCode = None
-                if (
-                    "scholarAddress" in rowData.keys() and
-                    "scholarPrivateKey" in rowData.keys() and
-                    "scholarName" in rowData.keys() and
-                    rowData["scholarAddress"] and
-                    rowData["scholarPrivateKey"]  and
-                    rowData["scholarName"]
-                ):
-                    qrCode = QRCode(
-                        account=rowData["scholarAddress"],
-                        private_key=rowData["scholarPrivateKey"],
-                        acc_name=rowData["scholarName"]
-                    ).get_qr()
-
-                image = None
-                qrImage = None
-                if not qrCode:
-                    image = Image.new("1", (770, 830,), color=1)
-                else:
-                    qrImage = qrCode.get_image()
-                    image = Image.new("1", (qrImage.size[0], qrImage.size[1]+60,), color=1)
-                    image.paste(qrImage, (0, 0,))
-
-                imageDraw = ImageDraw.Draw(image)
-                imageFont = ImageFont.truetype("fonts\\RobotoMono-Regular.ttf", 24)
-                qrCodeValid = False
-
-                if not qrImage:
-                    textStr = (
-                        "Invalid data was passed to QR Code.\n" +
-                        "Please ensure that scholarName, scholarAddress,\n" +
-                        "and scholarPrivateKey are filled in\n" +
-                        "and are valid."
-                    )
-                    textSize = imageDraw.multiline_textsize(
-                        textStr,
-                        font=imageFont
-                    )
-                    imageDraw.multiline_text(
-                        (int((770-textSize[0])/2), int((830-textSize[1])/2),),
-                        textStr,
-                        font=imageFont,
-                        fill=0
-                    )
-                else:
-                    textSize = imageDraw.textsize(rowData["scholarName"], font=imageFont)
-                    imageDraw.text(
-                        (int((qrImage.size[0]-textSize[0])/2), qrImage.size[1],),
-                        rowData["scholarName"],
-                        font=imageFont,
-                        fill=0
-                    )
-                    qrCodeValid = True
+                image, qrCodeValid = createQRImage(rowData)
 
                 imageScreen = DisplayImageScreen(
                     image=image,
@@ -373,6 +317,7 @@ class AppScreens(ScreenManager):
 
             self.displayedScreen = ManageTableScreen(
                 keyItems=[
+                    ("discordName", "textinput",),
                     ("scholarName", "textinput",),
                     ("scholarAddress", "addressinput",),
                     ("scholarPayoutAddress", "addressinput",),
