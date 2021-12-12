@@ -44,10 +44,15 @@ def runDiscordBot(discord_token, discord_guild_id, dbpath):
 
             await user.send(file=File(output, "qrcode.png"))
         else:
-            await user.send("Cannot find scholar {}.".format(context.author.name))
+            await user.send(
+                "Cannot find scholar {}#{}.".format(
+                    context.author.name,
+                    context.author.discriminator
+                )
+            )
 
     @send_qr_code.error
-    async def secretguilddata_error(ctx, error):
+    async def send_qr_code_error(ctx, error):
         if isinstance(error, commands.CheckFailure):
             await ctx.send('Nothing to see here comrade.')
 
