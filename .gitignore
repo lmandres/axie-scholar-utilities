@@ -131,8 +131,13 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# Sensitive files
+# Files specific to building
 venv_test_win/
+rebuild_venv.bat
+reinstall_venv.bat
+requirements-build.txt
+
+# Sensitive files
 config.ini
 payments.dat
 payments.json
