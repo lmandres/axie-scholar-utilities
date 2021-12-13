@@ -698,3 +698,28 @@ class DatabaseReader(object):
     def updateTeamInfo(self, teamName="", managerAddress=""):
         self.setSetting("Team Name", teamName)
         self.setSetting("Manager Address", managerAddress)
+
+    def getPaymentsList(self):
+        return self.queryDatabase(
+            """
+                SELECT
+                    payments.paymentID,
+                    scholars.scholarName,
+                    scholars.scholarAddress,
+                    scholars.scholarPayout,
+                    scholars.scholarPercent,
+                    scholars.scholarPayoutAddress,
+                    scholars.scholarPrivateKey,
+                    trainers.trainerPayoutAddress,
+                    trainers.trainerPayout,
+                    trainers.trainerPercent
+                FROM
+                    payments INNER JOIN scholars ON
+                        payments.scholarID = scholars.scholarID
+                    LEFT OUTER JOIN trainers ON
+                        payments.trainerID = trainers.trainerID
+                ORDER BY
+                    paymentID
+                ;
+            """
+        )

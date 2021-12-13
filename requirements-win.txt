@@ -4,6 +4,7 @@ altgraph==0.17.2
 async-timeout==4.0.0
 atomicwrites==1.4.0
 attrs==21.2.0
+axie-utils==1.0.3
 base58==2.1.1
 bitarray==1.2.2
 certifi==2021.10.8

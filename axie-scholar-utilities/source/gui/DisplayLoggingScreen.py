@@ -20,10 +20,11 @@ class DisplayLoggingScreen(Screen):
     def __init__(self, **kwargs):
 
         def runCallbackWrapper(instance):
-            runCallback(instance.parent.parent)
+            runCallback(instance.parent.parent.parent)
+            self.closeButton.disabled = False
 
         def closeCallbackWrapper(instance):
-            closeCallback(instance.parent.parent)
+            closeCallback(instance.parent.parent.parent)
 
         def setSize(instance, sizeIn):
             setattr(instance, "width", sizeIn[0])

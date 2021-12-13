@@ -1,5 +1,7 @@
+import asyncio
 import configparser
 import csv
+import logging
 
 from kivy.app import App
 from kivy.core.window import Window
@@ -18,6 +20,9 @@ from axie.qr_code import createQRImage
 from axie.DatabaseReader import DatabaseReader
 from axie.qr_code import QRCode
 from axie.utils import load_json
+
+from axie_utils import Claim
+from axie_utils import Payment
 
 
 class AppScreens(ScreenManager):
@@ -368,7 +373,31 @@ class AppScreens(ScreenManager):
             )
 
         elif nextScreenIn == "RunClaimsAndAutoPayouts":
-            self.displayedScreen = DisplayLoggingScreen()
+
+            def closeScreen(root):
+                root.closeDisplayedScreen()
+
+            def runClaimsAndAutoPayouts(root):
+
+                claims = []
+                for rowItem in self.dbreader.getPaymentsList():
+                    claims.append(
+                        Claim(
+                            acc_name=rowItem["scholarName"],
+                            account=rowItem["scholarAddress"],
+                            private_key=rowItem["scholarPrivateKey"]
+                        )
+                    )
+
+                logging.info("Claiming starting...")
+                loop = asyncio.get_event_loop()
+                loop.run_until_complete(asyncio.gather(*[claim.async_execute() for claim in claims]))
+                logging.info("Claiming completed!")
+
+            self.displayedScreen = DisplayLoggingScreen(
+                closeCallback=closeScreen,
+                runCallback=runClaimsAndAutoPayouts
+            )
 
         self.add_widget(self.displayedScreen)
 

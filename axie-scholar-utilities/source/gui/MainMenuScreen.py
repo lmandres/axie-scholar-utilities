@@ -97,7 +97,7 @@ class MainMenuScreen(Screen):
         self.layoutRow.add_widget(
             Button(
                 text="Run Claims and Auto-Payouts",
-                disabled=True,
+                disabled=False,
                 on_press=buttonCallback
             )
         )
